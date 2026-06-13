@@ -38,11 +38,19 @@ Android phone (same Wi-Fi network). The dev server binds to all interfaces (`hos
 
 ## Install on Android
 
-1. Open the deployed app in Chrome: **https://amimbs.github.io/Lizard-Music/**
-2. Tap the menu (⋮) → **Install app** or **Add to Home screen**
-3. Launch from your home screen like a native app
+Chrome no longer shows an automatic install popup for most sites. After deploying the latest version, you will see an **Install** bar at the top of the app when Chrome is ready, or manual steps below.
+
+1. Open the deployed app in **Chrome**: **https://amimbs.github.io/Lizard-Music/**
+2. If you see the purple **Install** bar, tap **Install** and wait for it to finish
+3. Otherwise, tap the menu (**⋮**) → **Install app** or **Add to Home screen**
+4. Launch from your **home screen icon** — not from the Downloads folder
+5. A proper install adds an icon to your home screen (and usually the app drawer). Long-press the icon: **Uninstall** means it installed correctly; **Remove** means it is only a shortcut
 
 > **Note:** On Android, use **Add files** to pick music. Folder picking is unreliable on mobile Chrome.
+
+**If install fails or lands in Downloads:** make sure you are signed into Google Play Services, on normal Wi‑Fi (not a restrictive VPN), and wait 10–20 seconds after tapping Install. Then try Chrome menu → Install app again.
+
+**If your library persists after uninstalling:** uninstalling removes the app icon, not stored site data. To clear your music: Chrome → Settings → Site settings → amimbs.github.io → Clear storage.
 
 ## Keyboard shortcuts (desktop)
 

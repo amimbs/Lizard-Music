@@ -26,6 +26,7 @@ import {
   requestPersistentStorage,
   isQuotaError,
 } from './libraryDb.js'
+import { useInstallPrompt } from './useInstallPrompt.js'
 
 const AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.flac', '.wav', '.ogg', '.oga', '.opus', '.webm', '.weba']
 const METADATA_CONCURRENCY = 5
@@ -461,6 +462,7 @@ export default function App() {
   }, [])
 
   const hasTracks = tracks.length > 0
+  const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
 
   return (
     <div className="app">
@@ -525,6 +527,34 @@ export default function App() {
           <button type="button" onClick={() => setStorageError('')} aria-label="Dismiss">
             ×
           </button>
+        </div>
+      )}
+
+      {(showBanner || showManualHint) && (
+        <div className="install-banner">
+          <div className="install-banner-text">
+            {showBanner ? (
+              <>
+                <strong>Install Local Music</strong>
+                <span>Add to your home screen for quick access.</span>
+              </>
+            ) : (
+              <>
+                <strong>Install this app</strong>
+                <span>In Chrome, tap <span className="install-menu">⋮</span> → <strong>Install app</strong>.</span>
+              </>
+            )}
+          </div>
+          <div className="install-banner-actions">
+            {showBanner && (
+              <button type="button" className="btn primary install-btn" onClick={install}>
+                Install
+              </button>
+            )}
+            <button type="button" className="install-dismiss" onClick={dismiss} aria-label="Dismiss">
+              ×
+            </button>
+          </div>
         </div>
       )}
 

@@ -10,6 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',
       includeAssets: ['note.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'],
       manifest: {
+        id: '/Lizard-Music/',
         name: 'Local Music Player',
         short_name: 'Local Music',
         description: 'A fully-local music player — nothing leaves your device.',
@@ -19,16 +20,19 @@ export default defineConfig({
         orientation: 'portrait',
         scope: '/Lizard-Music/',
         start_url: '/Lizard-Music/',
+        categories: ['music', 'entertainment'],
         icons: [
           {
             src: 'icon-192.png',
             sizes: '192x192',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'icon-512.png',
             sizes: '512x512',
             type: 'image/png',
+            purpose: 'any',
           },
           {
             src: 'icon-maskable-512.png',
