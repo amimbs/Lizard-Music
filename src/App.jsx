@@ -32,6 +32,7 @@ const AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.flac', '.wav', '.ogg', '.oga', '.op
 const METADATA_CONCURRENCY = 5
 const TRACK_ROW_HEIGHT = 60
 const TRACK_ROW_HEIGHT_MOBILE = 56
+const RECENT_MS = 7 * 24 * 60 * 60 * 1000
 
 function isAudioFile(file) {
   const name = file.name.toLowerCase()
@@ -72,6 +73,7 @@ export default function App() {
   const [shuffle, setShuffle] = useState(false)
   const [repeat, setRepeat] = useState('off') // off | all | one
   const [search, setSearch] = useState('')
+  const [view, setView] = useState('songs') // songs | recent
   const [loading, setLoading] = useState(false)
   const [libraryReady, setLibraryReady] = useState(false)
   const [storageError, setStorageError] = useState('')
@@ -212,17 +214,47 @@ export default function App() {
     setIsPlaying((p) => !p)
   }, [currentTrack])
 
-  const buildShuffleOrder = useCallback((length, exclude) => {
-    const order = Array.from({ length }, (_, i) => i).filter((i) => i !== exclude)
-    for (let i = order.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1))
-      ;[order[i], order[j]] = [order[j], order[i]]
+  const viewList = useMemo(() => {
+    if (view === 'songs') {
+      return tracks
+        .map((t, i) => ({ track: t, index: i }))
+        .sort((a, b) => {
+          const titleCmp = a.track.title.toLowerCase().localeCompare(b.track.title.toLowerCase())
+          if (titleCmp !== 0) return titleCmp
+          return a.track.artist.toLowerCase().localeCompare(b.track.artist.toLowerCase())
+        })
     }
-    return exclude >= 0 ? [exclude, ...order] : order
+    const cutoff = Date.now() - RECENT_MS
+    return tracks
+      .map((t, i) => ({ track: t, index: i }))
+      .filter(({ track }) => track.addedAt >= cutoff)
+      .sort((a, b) => b.track.addedAt - a.track.addedAt)
+  }, [tracks, view])
+
+  const displayed = useMemo(() => {
+    if (!search.trim()) return viewList
+    const q = search.toLowerCase()
+    return viewList.filter(
+      ({ track }) =>
+        track.title.toLowerCase().includes(q) ||
+        track.artist.toLowerCase().includes(q) ||
+        track.album.toLowerCase().includes(q),
+    )
+  }, [viewList, search])
+
+  const playOrder = useMemo(() => displayed.map((d) => d.index), [displayed])
+
+  const buildShuffleOrder = useCallback((order, exclude) => {
+    const shuffled = order.filter((i) => i !== exclude)
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1))
+      ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+    }
+    return exclude >= 0 ? [exclude, ...shuffled] : shuffled
   }, [])
 
   const next = useCallback((auto = false) => {
-    if (tracks.length === 0) return
+    if (playOrder.length === 0) return
     if (repeat === 'one' && auto) {
       const a = audioRef.current
       if (a) {
@@ -235,7 +267,7 @@ export default function App() {
       let order = shuffleOrderRef.current
       const pos = order.indexOf(currentIndex)
       if (pos === -1 || pos + 1 >= order.length) {
-        order = buildShuffleOrder(tracks.length, -1)
+        order = buildShuffleOrder(playOrder, -1)
         shuffleOrderRef.current = order
         playIndex(order[0])
         return
@@ -243,17 +275,20 @@ export default function App() {
       playIndex(order[pos + 1])
       return
     }
-    if (currentIndex + 1 < tracks.length) {
-      playIndex(currentIndex + 1)
-    } else if (repeat === 'all') {
-      playIndex(0)
+    const pos = playOrder.indexOf(currentIndex)
+    if (pos !== -1 && pos + 1 < playOrder.length) {
+      playIndex(playOrder[pos + 1])
+    } else if (pos !== -1 && repeat === 'all') {
+      playIndex(playOrder[0])
+    } else if (pos === -1) {
+      playIndex(playOrder[0])
     } else {
       setIsPlaying(false)
     }
-  }, [tracks.length, repeat, shuffle, currentIndex, playIndex, buildShuffleOrder])
+  }, [playOrder, repeat, shuffle, currentIndex, playIndex, buildShuffleOrder])
 
   const prev = useCallback(() => {
-    if (tracks.length === 0) return
+    if (playOrder.length === 0) return
     const a = audioRef.current
     if (a && a.currentTime > 3) {
       a.currentTime = 0
@@ -267,12 +302,15 @@ export default function App() {
         return
       }
     }
-    if (currentIndex - 1 >= 0) {
-      playIndex(currentIndex - 1)
-    } else if (repeat === 'all') {
-      playIndex(tracks.length - 1)
+    const pos = playOrder.indexOf(currentIndex)
+    if (pos > 0) {
+      playIndex(playOrder[pos - 1])
+    } else if (pos === 0 && repeat === 'all') {
+      playIndex(playOrder[playOrder.length - 1])
+    } else if (pos === -1) {
+      playIndex(playOrder[playOrder.length - 1])
     }
-  }, [tracks.length, shuffle, currentIndex, repeat, playIndex])
+  }, [playOrder, shuffle, currentIndex, repeat, playIndex])
 
   const seekTo = useCallback((time) => {
     const a = audioRef.current
@@ -284,9 +322,9 @@ export default function App() {
   // Reset shuffle order when toggled on.
   useEffect(() => {
     if (shuffle) {
-      shuffleOrderRef.current = buildShuffleOrder(tracks.length, currentIndex)
+      shuffleOrderRef.current = buildShuffleOrder(playOrder, currentIndex)
     }
-  }, [shuffle, tracks.length, currentIndex, buildShuffleOrder])
+  }, [shuffle, playOrder, currentIndex, buildShuffleOrder])
 
   // Restore library from IndexedDB on startup.
   useEffect(() => {
@@ -417,19 +455,6 @@ export default function App() {
     seekTo(Number(e.target.value))
   }
 
-  const filtered = useMemo(() => {
-    if (!search.trim()) return tracks.map((t, i) => ({ track: t, index: i }))
-    const q = search.toLowerCase()
-    return tracks
-      .map((t, i) => ({ track: t, index: i }))
-      .filter(
-        ({ track }) =>
-          track.title.toLowerCase().includes(q) ||
-          track.artist.toLowerCase().includes(q) ||
-          track.album.toLowerCase().includes(q),
-      )
-  }, [tracks, search])
-
   useEffect(() => {
     const updateRowHeight = () => {
       setRowHeight(window.innerWidth <= 760 ? TRACK_ROW_HEIGHT_MOBILE : TRACK_ROW_HEIGHT)
@@ -442,7 +467,7 @@ export default function App() {
   const estimateRowSize = useCallback(() => rowHeight, [rowHeight])
 
   const virtualizer = useVirtualizer({
-    count: filtered.length,
+    count: displayed.length,
     getScrollElement: () => contentRef.current,
     estimateSize: estimateRowSize,
     overscan: 8,
@@ -462,6 +487,7 @@ export default function App() {
   }, [])
 
   const hasTracks = tracks.length > 0
+  const recentEmpty = view === 'recent' && viewList.length === 0 && !search.trim()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
 
   return (
@@ -471,6 +497,24 @@ export default function App() {
           <span className="brand-icon"><IconMusic /></span>
           <span className="brand-name">Local Music</span>
         </div>
+        <nav className="nav" aria-label="Library views">
+          <button
+            type="button"
+            className={view === 'songs' ? 'active' : ''}
+            onClick={() => setView('songs')}
+            aria-current={view === 'songs' ? 'page' : undefined}
+          >
+            Songs
+          </button>
+          <button
+            type="button"
+            className={view === 'recent' ? 'active' : ''}
+            onClick={() => setView('recent')}
+            aria-current={view === 'recent' ? 'page' : undefined}
+          >
+            Recently Added
+          </button>
+        </nav>
         <div className="search">
           <IconSearch />
           <input
@@ -569,8 +613,20 @@ export default function App() {
             onPickFiles={() => fileInputRef.current?.click()}
             onPickFolder={() => folderInputRef.current?.click()}
           />
+        ) : recentEmpty ? (
+          <div className="view-empty">
+            <div className="view-empty-icon"><IconMusic /></div>
+            <h2>Nothing added in the last 7 days</h2>
+            <p>Songs you add will show up here for a week. Browse all music on the Songs page.</p>
+          </div>
         ) : (
           <div className="playlist">
+            <div className="page-title">
+              <h1>{view === 'songs' ? 'Songs' : 'Recently Added'}</h1>
+              <span className="page-count">
+                {displayed.length} {displayed.length === 1 ? 'song' : 'songs'}
+              </span>
+            </div>
             <div className="playlist-head">
               <span className="col-num">#</span>
               <span className="col-title">Title</span>
@@ -580,13 +636,13 @@ export default function App() {
             </div>
             <div
               className="playlist-body playlist-virtual"
-              style={{ height: filtered.length ? `${virtualizer.getTotalSize()}px` : undefined }}
+              style={{ height: displayed.length ? `${virtualizer.getTotalSize()}px` : undefined }}
             >
-              {filtered.length === 0 ? (
+              {displayed.length === 0 ? (
                 <div className="no-results">No tracks match “{search}”.</div>
               ) : (
                 virtualizer.getVirtualItems().map((virtualRow) => {
-                  const { track, index } = filtered[virtualRow.index]
+                  const { track, index } = displayed[virtualRow.index]
                   return (
                     <div
                       key={track.id}
@@ -598,7 +654,7 @@ export default function App() {
                     >
                       <TrackRow
                         track={track}
-                        index={index}
+                        displayIndex={virtualRow.index}
                         isCurrent={index === currentIndex}
                         isPlaying={isPlaying && index === currentIndex}
                         onPlay={() => (index === currentIndex ? togglePlay() : playIndex(index))}
@@ -711,7 +767,7 @@ export default function App() {
   )
 }
 
-const TrackRow = memo(function TrackRow({ track, index, isCurrent, isPlaying, onPlay, onRemove }) {
+const TrackRow = memo(function TrackRow({ track, displayIndex, isCurrent, isPlaying, onPlay, onRemove }) {
   const handleRowClick = (e) => {
     if (e.target.closest('button')) return
     onPlay()
@@ -740,7 +796,7 @@ const TrackRow = memo(function TrackRow({ track, index, isCurrent, isPlaying, on
           <span className="eq"><i></i><i></i><i></i></span>
         ) : (
           <>
-            <span className="num">{index + 1}</span>
+            <span className="num">{displayIndex + 1}</span>
             <span className="play-hover"><IconPlay /></span>
           </>
         )}
