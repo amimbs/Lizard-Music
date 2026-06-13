@@ -1,7 +1,9 @@
 # Local Music Player
 
 A clean, fully-local music player built with React + Vite. Pick songs or whole
-folders from your computer and play them — nothing ever leaves your machine.
+folders from your device and play them — nothing ever leaves your machine.
+
+Install it on Android as a PWA for a native-like experience with lock-screen controls.
 
 ## Features
 
@@ -12,6 +14,9 @@ folders from your computer and play them — nothing ever leaves your machine.
 - Live search across your library
 - Album art with an animated "now playing" indicator
 - OS media-key support (play/pause/next/prev) and keyboard shortcuts
+- Lock-screen controls on Android via Media Session API
+- Installable PWA for Android (add to home screen)
+- Virtualized playlist for smooth scrolling with large libraries
 - Supports mp3, m4a/aac, flac, wav, ogg/opus, and more
 
 ## Getting started
@@ -22,10 +27,23 @@ npm install
 npm run dev
 ```
 
-The app opens automatically at http://localhost:5173. Click **Add folder** (or
-**Add files**) and select your downloaded music.
+The app opens automatically at http://localhost:5173/Lizard-Music/. Click **Add files** (or
+**Add folder** on desktop) and select your music.
 
-## Keyboard shortcuts
+### Test on your phone over Wi-Fi
+
+With the dev server running, open `http://<your-pc-ip>:5173/Lizard-Music/` on your
+Android phone (same Wi-Fi network). The dev server binds to all interfaces (`host: true`).
+
+## Install on Android
+
+1. Open the deployed app in Chrome: **https://amimbs.github.io/Lizard-Music/**
+2. Tap the menu (⋮) → **Install app** or **Add to Home screen**
+3. Launch from your home screen like a native app
+
+> **Note:** On Android, use **Add files** to pick music. Folder picking is unreliable on mobile Chrome.
+
+## Keyboard shortcuts (desktop)
 
 - `Space` — play / pause
 - `Shift + →` — next track
@@ -38,9 +56,20 @@ npm run build
 npm run preview
 ```
 
+## Deploy to GitHub Pages
+
+Pushes to `main` automatically deploy via GitHub Actions (`.github/workflows/deploy.yml`).
+
+To enable GitHub Pages for the first time:
+
+1. Go to the repo **Settings → Pages**
+2. Set **Source** to **GitHub Actions**
+3. Push to `main` — the workflow builds and publishes to `https://amimbs.github.io/Lizard-Music/`
+
 ## Notes
 
 - Browsers can't read your disk directly, so you choose files through the native
   picker. Your music is loaded in-memory for the session only.
-- The "Add folder" picker uses the `webkitdirectory` API, supported in Chrome,
-  Edge, and other Chromium-based browsers (and recent Firefox/Safari).
+- The "Add folder" picker uses the `webkitdirectory` API, supported on desktop
+  Chrome, Edge, and other Chromium-based browsers (and recent Firefox/Safari).
+- PWA install and service workers require HTTPS — GitHub Pages provides this automatically.

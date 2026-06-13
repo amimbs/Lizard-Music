@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from 'react'
+import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react'
+import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseBlob } from 'music-metadata-browser'
 import './App.css'
 import {
@@ -18,6 +19,9 @@ import {
 } from './icons.jsx'
 
 const AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.flac', '.wav', '.ogg', '.oga', '.opus', '.webm', '.weba']
+const METADATA_CONCURRENCY = 5
+const TRACK_ROW_HEIGHT = 60
+const TRACK_ROW_HEIGHT_MOBILE = 56
 
 function isAudioFile(file) {
   const name = file.name.toLowerCase()
@@ -36,6 +40,17 @@ function prettyName(filename) {
   return filename.replace(/\.[^/.]+$/, '').replace(/_/g, ' ')
 }
 
+async function mapWithConcurrency(items, limit, fn) {
+  let index = 0
+  const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
+    while (index < items.length) {
+      const current = index++
+      await fn(items[current], current)
+    }
+  })
+  await Promise.all(workers)
+}
+
 export default function App() {
   const [tracks, setTracks] = useState([])
   const [currentIndex, setCurrentIndex] = useState(-1)
@@ -48,13 +63,56 @@ export default function App() {
   const [repeat, setRepeat] = useState('off') // off | all | one
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [rowHeight, setRowHeight] = useState(TRACK_ROW_HEIGHT)
 
   const audioRef = useRef(null)
   const fileInputRef = useRef(null)
   const folderInputRef = useRef(null)
   const shuffleOrderRef = useRef([])
+  const contentRef = useRef(null)
+  const urlRegistryRef = useRef(new Set())
 
   const currentTrack = currentIndex >= 0 ? tracks[currentIndex] : null
+
+  const registerUrl = useCallback((url) => {
+    if (url) urlRegistryRef.current.add(url)
+    return url
+  }, [])
+
+  const revokeUrl = useCallback((url) => {
+    if (!url) return
+    URL.revokeObjectURL(url)
+    urlRegistryRef.current.delete(url)
+  }, [])
+
+  const parseTrackMetadata = useCallback(async (track) => {
+    try {
+      const metadata = await parseBlob(track.file, { duration: false })
+      const { common, format } = metadata
+      let cover = null
+      if (common.picture?.[0]) {
+        const pic = common.picture[0]
+        const blob = new Blob([pic.data], { type: pic.format })
+        cover = registerUrl(URL.createObjectURL(blob))
+      }
+      setTracks((prev) =>
+        prev.map((t) => {
+          if (t.id !== track.id) return t
+          if (t.cover) revokeUrl(t.cover)
+          return {
+            ...t,
+            title: common.title || t.title,
+            artist: common.artist || t.artist,
+            album: common.album || '',
+            cover,
+            duration: format.duration || 0,
+          }
+        }),
+      )
+    } catch {
+      // Ignore files we can't read tags from; filename fallback is fine.
+    }
+  }, [registerUrl, revokeUrl])
 
   // Add files to the playlist and parse metadata in the background.
   const addFiles = useCallback(async (fileList) => {
@@ -66,7 +124,7 @@ export default function App() {
     const newTracks = files.map((file, i) => ({
       id: `${Date.now()}-${baseIndex + i}-${file.name}`,
       file,
-      url: URL.createObjectURL(file),
+      url: registerUrl(URL.createObjectURL(file)),
       title: prettyName(file.name),
       artist: 'Unknown artist',
       album: '',
@@ -80,37 +138,9 @@ export default function App() {
       return merged
     })
 
-    // Parse tags lazily so the UI stays responsive.
-    for (const track of newTracks) {
-      try {
-        const metadata = await parseBlob(track.file, { duration: false })
-        const { common, format } = metadata
-        let cover = null
-        if (common.picture && common.picture[0]) {
-          const pic = common.picture[0]
-          const blob = new Blob([pic.data], { type: pic.format })
-          cover = URL.createObjectURL(blob)
-        }
-        setTracks((prev) =>
-          prev.map((t) =>
-            t.id === track.id
-              ? {
-                  ...t,
-                  title: common.title || t.title,
-                  artist: common.artist || t.artist,
-                  album: common.album || '',
-                  cover,
-                  duration: format.duration || 0,
-                }
-              : t,
-          ),
-        )
-      } catch {
-        // Ignore files we can't read tags from; filename fallback is fine.
-      }
-    }
+    await mapWithConcurrency(newTracks, METADATA_CONCURRENCY, (track) => parseTrackMetadata(track))
     setLoading(false)
-  }, [tracks.length])
+  }, [tracks.length, registerUrl, parseTrackMetadata])
 
   const playIndex = useCallback((index) => {
     setCurrentIndex(index)
@@ -184,6 +214,13 @@ export default function App() {
     }
   }, [tracks.length, shuffle, currentIndex, repeat, playIndex])
 
+  const seekTo = useCallback((time) => {
+    const a = audioRef.current
+    if (!a || time == null || Number.isNaN(time)) return
+    a.currentTime = time
+    setProgress(time)
+  }, [])
+
   // Reset shuffle order when toggled on.
   useEffect(() => {
     if (shuffle) {
@@ -210,20 +247,47 @@ export default function App() {
     if (a) a.volume = muted ? 0 : volume
   }, [volume, muted])
 
-  // Media Session API for OS-level media keys.
+  // Media Session API for OS-level media keys and lock-screen controls.
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack) return
+
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title: currentTrack.title,
       artist: currentTrack.artist,
       album: currentTrack.album,
       artwork: currentTrack.cover ? [{ src: currentTrack.cover }] : [],
     })
+
     navigator.mediaSession.setActionHandler('play', () => setIsPlaying(true))
     navigator.mediaSession.setActionHandler('pause', () => setIsPlaying(false))
     navigator.mediaSession.setActionHandler('nexttrack', () => next())
     navigator.mediaSession.setActionHandler('previoustrack', () => prev())
-  }, [currentTrack, next, prev])
+    navigator.mediaSession.setActionHandler('seekto', (details) => {
+      if (details.seekTime != null) seekTo(details.seekTime)
+    })
+
+    return () => {
+      navigator.mediaSession.setActionHandler('play', null)
+      navigator.mediaSession.setActionHandler('pause', null)
+      navigator.mediaSession.setActionHandler('nexttrack', null)
+      navigator.mediaSession.setActionHandler('previoustrack', null)
+      navigator.mediaSession.setActionHandler('seekto', null)
+    }
+  }, [currentTrack, next, prev, seekTo])
+
+  // Keep lock-screen scrubber in sync.
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !currentTrack || !duration) return
+    try {
+      navigator.mediaSession.setPositionState({
+        duration,
+        playbackRate: 1,
+        position: Math.min(progress, duration),
+      })
+    } catch {
+      // setPositionState not supported in this browser.
+    }
+  }, [currentTrack, progress, duration])
 
   // Keyboard shortcuts.
   useEffect(() => {
@@ -251,12 +315,7 @@ export default function App() {
     if (a) setDuration(a.duration)
   }
   const onSeek = (e) => {
-    const a = audioRef.current
-    const value = Number(e.target.value)
-    if (a) {
-      a.currentTime = value
-      setProgress(value)
-    }
+    seekTo(Number(e.target.value))
   }
 
   const filtered = useMemo(() => {
@@ -272,19 +331,35 @@ export default function App() {
       )
   }, [tracks, search])
 
+  useEffect(() => {
+    const updateRowHeight = () => {
+      setRowHeight(window.innerWidth <= 760 ? TRACK_ROW_HEIGHT_MOBILE : TRACK_ROW_HEIGHT)
+    }
+    updateRowHeight()
+    window.addEventListener('resize', updateRowHeight)
+    return () => window.removeEventListener('resize', updateRowHeight)
+  }, [])
+
+  const estimateRowSize = useCallback(() => rowHeight, [rowHeight])
+
+  const virtualizer = useVirtualizer({
+    count: filtered.length,
+    getScrollElement: () => contentRef.current,
+    estimateSize: estimateRowSize,
+    overscan: 8,
+  })
+
   const cycleRepeat = () => {
     setRepeat((r) => (r === 'off' ? 'all' : r === 'all' ? 'one' : 'off'))
   }
 
   // Clean up object URLs on unmount.
   useEffect(() => {
+    const registry = urlRegistryRef.current
     return () => {
-      tracks.forEach((t) => {
-        URL.revokeObjectURL(t.url)
-        if (t.cover) URL.revokeObjectURL(t.cover)
-      })
+      registry.forEach((url) => URL.revokeObjectURL(url))
+      registry.clear()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const hasTracks = tracks.length > 0
@@ -306,11 +381,19 @@ export default function App() {
           />
         </div>
         <div className="actions">
-          <button className="btn" onClick={() => fileInputRef.current?.click()}>
-            <IconFile /> Add files
+          <button
+            className="btn primary btn-icon-only"
+            aria-label="Add files"
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <IconFile /> <span className="btn-label">Add files</span>
           </button>
-          <button className="btn primary" onClick={() => folderInputRef.current?.click()}>
-            <IconFolder /> Add folder
+          <button
+            className="btn btn-icon-only"
+            aria-label="Add folder"
+            onClick={() => folderInputRef.current?.click()}
+          >
+            <IconFolder /> <span className="btn-label">Add folder</span>
           </button>
         </div>
         <input
@@ -338,7 +421,7 @@ export default function App() {
         />
       </header>
 
-      <main className="content">
+      <main className="content" ref={contentRef}>
         {!hasTracks ? (
           <EmptyState
             onPickFiles={() => fileInputRef.current?.click()}
@@ -352,19 +435,34 @@ export default function App() {
               <span className="col-album">Album</span>
               <span className="col-dur">Time</span>
             </div>
-            <div className="playlist-body">
-              {filtered.map(({ track, index }) => (
-                <TrackRow
-                  key={track.id}
-                  track={track}
-                  index={index}
-                  isCurrent={index === currentIndex}
-                  isPlaying={isPlaying && index === currentIndex}
-                  onPlay={() => (index === currentIndex ? togglePlay() : playIndex(index))}
-                />
-              ))}
-              {filtered.length === 0 && (
+            <div
+              className="playlist-body playlist-virtual"
+              style={{ height: filtered.length ? `${virtualizer.getTotalSize()}px` : undefined }}
+            >
+              {filtered.length === 0 ? (
                 <div className="no-results">No tracks match “{search}”.</div>
+              ) : (
+                virtualizer.getVirtualItems().map((virtualRow) => {
+                  const { track, index } = filtered[virtualRow.index]
+                  return (
+                    <div
+                      key={track.id}
+                      className="playlist-virtual-row"
+                      style={{
+                        height: `${virtualRow.size}px`,
+                        transform: `translateY(${virtualRow.start}px)`,
+                      }}
+                    >
+                      <TrackRow
+                        track={track}
+                        index={index}
+                        isCurrent={index === currentIndex}
+                        isPlaying={isPlaying && index === currentIndex}
+                        onPlay={() => (index === currentIndex ? togglePlay() : playIndex(index))}
+                      />
+                    </div>
+                  )
+                })
               )}
             </div>
           </div>
@@ -401,22 +499,24 @@ export default function App() {
               className={`ctrl ${shuffle ? 'active' : ''}`}
               onClick={() => setShuffle((s) => !s)}
               title="Shuffle"
+              aria-label="Shuffle"
             >
               <IconShuffle />
             </button>
-            <button className="ctrl" onClick={prev} title="Previous (Shift+Left)">
+            <button className="ctrl" onClick={prev} title="Previous (Shift+Left)" aria-label="Previous">
               <IconPrev />
             </button>
-            <button className="ctrl play" onClick={togglePlay} title="Play/Pause (Space)">
+            <button className="ctrl play" onClick={togglePlay} title="Play/Pause (Space)" aria-label="Play or pause">
               {isPlaying ? <IconPause /> : <IconPlay />}
             </button>
-            <button className="ctrl" onClick={() => next()} title="Next (Shift+Right)">
+            <button className="ctrl" onClick={() => next()} title="Next (Shift+Right)" aria-label="Next">
               <IconNext />
             </button>
             <button
               className={`ctrl ${repeat !== 'off' ? 'active' : ''}`}
               onClick={cycleRepeat}
               title={`Repeat: ${repeat}`}
+              aria-label={`Repeat: ${repeat}`}
             >
               {repeat === 'one' ? <IconRepeatOne /> : <IconRepeat />}
             </button>
@@ -430,6 +530,7 @@ export default function App() {
               step="0.1"
               value={progress}
               onChange={onSeek}
+              aria-label="Seek"
               style={{ '--pct': `${duration ? (progress / duration) * 100 : 0}%` }}
             />
             <span className="time">{formatTime(duration)}</span>
@@ -437,7 +538,7 @@ export default function App() {
         </div>
 
         <div className="volume">
-          <button className="ctrl" onClick={() => setMuted((m) => !m)} title="Mute">
+          <button className="ctrl" onClick={() => setMuted((m) => !m)} title="Mute" aria-label="Mute">
             {muted || volume === 0 ? <IconVolumeMute /> : <IconVolume />}
           </button>
           <input
@@ -450,6 +551,7 @@ export default function App() {
               setVolume(Number(e.target.value))
               setMuted(false)
             }}
+            aria-label="Volume"
             style={{ '--pct': `${(muted ? 0 : volume) * 100}%` }}
           />
         </div>
@@ -465,10 +567,26 @@ export default function App() {
   )
 }
 
-function TrackRow({ track, index, isCurrent, isPlaying, onPlay }) {
+const TrackRow = memo(function TrackRow({ track, index, isCurrent, isPlaying, onPlay }) {
+  const handleRowClick = (e) => {
+    if (e.target.closest('button')) return
+    onPlay()
+  }
+
   return (
-    <div className={`track ${isCurrent ? 'current' : ''}`} onDoubleClick={onPlay}>
-      <button className="col-num" onClick={onPlay}>
+    <div
+      className={`track ${isCurrent ? 'current' : ''}`}
+      onClick={handleRowClick}
+      role="button"
+      tabIndex={0}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault()
+          onPlay()
+        }
+      }}
+    >
+      <button className="col-num" onClick={onPlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
         {isPlaying ? (
           <span className="eq"><i></i><i></i><i></i></span>
         ) : (
@@ -480,7 +598,7 @@ function TrackRow({ track, index, isCurrent, isPlaying, onPlay }) {
       </button>
       <div className="col-title">
         <div className="cover-sm">
-          {track.cover ? <img src={track.cover} alt="" /> : <IconMusic />}
+          {track.cover ? <img src={track.cover} alt="" loading="lazy" /> : <IconMusic />}
         </div>
         <div className="title-meta">
           <div className="t-title" title={track.title}>{track.title}</div>
@@ -491,19 +609,19 @@ function TrackRow({ track, index, isCurrent, isPlaying, onPlay }) {
       <div className="col-dur">{track.duration ? formatTime(track.duration) : '—'}</div>
     </div>
   )
-}
+})
 
 function EmptyState({ onPickFiles, onPickFolder }) {
   return (
     <div className="empty">
       <div className="empty-icon"><IconMusic /></div>
       <h1>Your library is empty</h1>
-      <p>Pick individual songs or a whole folder of music from your computer to start listening.</p>
+      <p>Pick individual songs or a whole folder of music from your device to start listening.</p>
       <div className="empty-actions">
-        <button className="btn" onClick={onPickFiles}><IconFile /> Add files</button>
-        <button className="btn primary" onClick={onPickFolder}><IconFolder /> Add folder</button>
+        <button className="btn primary" onClick={onPickFiles}><IconFile /> Add files</button>
+        <button className="btn" onClick={onPickFolder}><IconFolder /> Add folder</button>
       </div>
-      <p className="hint">Everything stays on your machine — nothing is uploaded.</p>
+      <p className="hint">Everything stays on your device — nothing is uploaded.</p>
     </div>
   )
 }
