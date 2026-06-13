@@ -16,7 +16,16 @@ import {
   IconFolder,
   IconFile,
   IconSearch,
+  IconTrash,
 } from './icons.jsx'
+import {
+  getAllTracks,
+  putTrack,
+  deleteTrack,
+  trackToRecord,
+  requestPersistentStorage,
+  isQuotaError,
+} from './libraryDb.js'
 
 const AUDIO_EXT = ['.mp3', '.m4a', '.aac', '.flac', '.wav', '.ogg', '.oga', '.opus', '.webm', '.weba']
 const METADATA_CONCURRENCY = 5
@@ -63,6 +72,8 @@ export default function App() {
   const [repeat, setRepeat] = useState('off') // off | all | one
   const [search, setSearch] = useState('')
   const [loading, setLoading] = useState(false)
+  const [libraryReady, setLibraryReady] = useState(false)
+  const [storageError, setStorageError] = useState('')
   const [rowHeight, setRowHeight] = useState(TRACK_ROW_HEIGHT)
 
   const audioRef = useRef(null)
@@ -85,34 +96,53 @@ export default function App() {
     urlRegistryRef.current.delete(url)
   }, [])
 
+  const persistTrack = useCallback(async (track) => {
+    try {
+      await putTrack(trackToRecord(track))
+      await requestPersistentStorage()
+    } catch (err) {
+      if (isQuotaError(err)) {
+        setStorageError('Storage full — remove some songs or free device space.')
+      }
+    }
+  }, [])
+
   const parseTrackMetadata = useCallback(async (track) => {
+    let updated = { ...track }
     try {
       const metadata = await parseBlob(track.file, { duration: false })
       const { common, format } = metadata
       let cover = null
+      let coverBlob = null
+      let coverMime = null
       if (common.picture?.[0]) {
         const pic = common.picture[0]
-        const blob = new Blob([pic.data], { type: pic.format })
-        cover = registerUrl(URL.createObjectURL(blob))
+        coverBlob = new Blob([pic.data], { type: pic.format })
+        coverMime = pic.format
+        cover = registerUrl(URL.createObjectURL(coverBlob))
+      }
+      updated = {
+        ...track,
+        title: common.title || track.title,
+        artist: common.artist || track.artist,
+        album: common.album || '',
+        cover,
+        coverBlob,
+        coverMime,
+        duration: format.duration || 0,
       }
       setTracks((prev) =>
         prev.map((t) => {
           if (t.id !== track.id) return t
           if (t.cover) revokeUrl(t.cover)
-          return {
-            ...t,
-            title: common.title || t.title,
-            artist: common.artist || t.artist,
-            album: common.album || '',
-            cover,
-            duration: format.duration || 0,
-          }
+          return updated
         }),
       )
     } catch {
       // Ignore files we can't read tags from; filename fallback is fine.
     }
-  }, [registerUrl, revokeUrl])
+    await persistTrack(updated)
+  }, [registerUrl, revokeUrl, persistTrack])
 
   // Add files to the playlist and parse metadata in the background.
   const addFiles = useCallback(async (fileList) => {
@@ -129,7 +159,10 @@ export default function App() {
       artist: 'Unknown artist',
       album: '',
       cover: null,
+      coverBlob: null,
+      coverMime: null,
       duration: 0,
+      addedAt: Date.now() + i,
     }))
 
     setTracks((prev) => {
@@ -146,6 +179,32 @@ export default function App() {
     setCurrentIndex(index)
     setIsPlaying(true)
   }, [])
+
+  const removeTrack = useCallback(async (id) => {
+    const index = tracks.findIndex((t) => t.id === id)
+    if (index === -1) return
+    const track = tracks[index]
+    revokeUrl(track.url)
+    if (track.cover) revokeUrl(track.cover)
+
+    const nextTracks = tracks.filter((t) => t.id !== id)
+    setTracks(nextTracks)
+
+    if (currentIndex >= 0) {
+      if (index < currentIndex) {
+        setCurrentIndex(currentIndex - 1)
+      } else if (index === currentIndex) {
+        setIsPlaying(false)
+        setCurrentIndex(nextTracks.length === 0 ? -1 : Math.min(currentIndex, nextTracks.length - 1))
+      }
+    }
+
+    try {
+      await deleteTrack(id)
+    } catch {
+      // Library already updated in memory.
+    }
+  }, [tracks, currentIndex, revokeUrl])
 
   const togglePlay = useCallback(() => {
     if (!currentTrack) return
@@ -227,6 +286,45 @@ export default function App() {
       shuffleOrderRef.current = buildShuffleOrder(tracks.length, currentIndex)
     }
   }, [shuffle, tracks.length, currentIndex, buildShuffleOrder])
+
+  // Restore library from IndexedDB on startup.
+  useEffect(() => {
+    let cancelled = false
+    ;(async () => {
+      try {
+        const records = await getAllTracks()
+        if (cancelled) return
+        const restored = records.map((record) => {
+          const file = new File([record.audioBlob], record.fileName, { type: record.mimeType })
+          const url = registerUrl(URL.createObjectURL(file))
+          const cover = record.coverBlob
+            ? registerUrl(URL.createObjectURL(record.coverBlob))
+            : null
+          return {
+            id: record.id,
+            file,
+            url,
+            title: record.title,
+            artist: record.artist,
+            album: record.album,
+            cover,
+            coverBlob: record.coverBlob ?? null,
+            coverMime: record.coverMime ?? null,
+            duration: record.duration,
+            addedAt: record.addedAt,
+          }
+        })
+        setTracks(restored)
+      } catch {
+        // IndexedDB unavailable — start with an empty library.
+      } finally {
+        if (!cancelled) setLibraryReady(true)
+      }
+    })()
+    return () => {
+      cancelled = true
+    }
+  }, [registerUrl])
 
   // Sync the <audio> element with the current track + playing state.
   useEffect(() => {
@@ -421,8 +519,22 @@ export default function App() {
         />
       </header>
 
+      {storageError && (
+        <div className="storage-banner" role="alert">
+          {storageError}
+          <button type="button" onClick={() => setStorageError('')} aria-label="Dismiss">
+            ×
+          </button>
+        </div>
+      )}
+
       <main className="content" ref={contentRef}>
-        {!hasTracks ? (
+        {!libraryReady ? (
+          <div className="restoring">
+            <div className="restoring-icon"><IconMusic /></div>
+            <p>Restoring your library…</p>
+          </div>
+        ) : !hasTracks ? (
           <EmptyState
             onPickFiles={() => fileInputRef.current?.click()}
             onPickFolder={() => folderInputRef.current?.click()}
@@ -434,6 +546,7 @@ export default function App() {
               <span className="col-title">Title</span>
               <span className="col-album">Album</span>
               <span className="col-dur">Time</span>
+              <span className="col-actions" aria-hidden="true" />
             </div>
             <div
               className="playlist-body playlist-virtual"
@@ -459,6 +572,7 @@ export default function App() {
                         isCurrent={index === currentIndex}
                         isPlaying={isPlaying && index === currentIndex}
                         onPlay={() => (index === currentIndex ? togglePlay() : playIndex(index))}
+                        onRemove={() => removeTrack(track.id)}
                       />
                     </div>
                   )
@@ -567,10 +681,15 @@ export default function App() {
   )
 }
 
-const TrackRow = memo(function TrackRow({ track, index, isCurrent, isPlaying, onPlay }) {
+const TrackRow = memo(function TrackRow({ track, index, isCurrent, isPlaying, onPlay, onRemove }) {
   const handleRowClick = (e) => {
     if (e.target.closest('button')) return
     onPlay()
+  }
+
+  const handleRemove = (e) => {
+    e.stopPropagation()
+    onRemove()
   }
 
   return (
@@ -607,6 +726,14 @@ const TrackRow = memo(function TrackRow({ track, index, isCurrent, isPlaying, on
       </div>
       <div className="col-album" title={track.album}>{track.album || '—'}</div>
       <div className="col-dur">{track.duration ? formatTime(track.duration) : '—'}</div>
+      <button
+        type="button"
+        className="col-actions remove-btn"
+        onClick={handleRemove}
+        aria-label="Remove from library"
+      >
+        <IconTrash />
+      </button>
     </div>
   )
 })
@@ -621,7 +748,7 @@ function EmptyState({ onPickFiles, onPickFolder }) {
         <button className="btn primary" onClick={onPickFiles}><IconFile /> Add files</button>
         <button className="btn" onClick={onPickFolder}><IconFolder /> Add folder</button>
       </div>
-      <p className="hint">Everything stays on your device — nothing is uploaded.</p>
+      <p className="hint">Everything stays on your device — nothing is uploaded. Your library is saved locally between sessions.</p>
     </div>
   )
 }

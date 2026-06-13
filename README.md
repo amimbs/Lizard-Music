@@ -16,6 +16,7 @@ Install it on Android as a PWA for a native-like experience with lock-screen con
 - OS media-key support (play/pause/next/prev) and keyboard shortcuts
 - Lock-screen controls on Android via Media Session API
 - Installable PWA for Android (add to home screen)
+- Library persists locally between sessions (IndexedDB)
 - Virtualized playlist for smooth scrolling with large libraries
 - Supports mp3, m4a/aac, flac, wav, ogg/opus, and more
 
@@ -69,7 +70,9 @@ To enable GitHub Pages for the first time:
 ## Notes
 
 - Browsers can't read your disk directly, so you choose files through the native
-  picker. Your music is loaded in-memory for the session only.
+  picker. Your music is stored locally on your device in IndexedDB and restored
+  when you reopen the app.
+- Removing a song deletes it from your saved library. Add files again to bring it back.
 - The "Add folder" picker uses the `webkitdirectory` API, supported on desktop
   Chrome, Edge, and other Chromium-based browsers (and recent Firefox/Safari).
 - PWA install and service workers require HTTPS — GitHub Pages provides this automatically.

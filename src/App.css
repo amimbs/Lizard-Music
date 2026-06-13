@@ -113,7 +113,7 @@
 .playlist-head,
 .track {
   display: grid;
-  grid-template-columns: 48px 1fr 28% 80px;
+  grid-template-columns: 48px 1fr 28% 56px 44px;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
@@ -137,6 +137,88 @@
   text-align: right;
   color: var(--text-dim);
   font-variant-numeric: tabular-nums;
+}
+
+.col-actions {
+  display: grid;
+  place-items: center;
+}
+
+.remove-btn {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  min-width: 36px;
+  min-height: 36px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  opacity: 0;
+  transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+.track:hover .remove-btn,
+.track:focus-within .remove-btn {
+  opacity: 1;
+}
+.remove-btn:hover {
+  color: #f87171;
+  background: rgba(248, 113, 113, 0.12);
+}
+.remove-btn:active {
+  transform: scale(0.95);
+}
+
+.storage-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 22px;
+  font-size: 13px;
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.35);
+  border-bottom: 1px solid rgba(248, 113, 113, 0.25);
+}
+.storage-banner button {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  font-size: 18px;
+  line-height: 1;
+  color: inherit;
+  opacity: 0.8;
+}
+.storage-banner button:hover {
+  opacity: 1;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.restoring {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  min-height: 50vh;
+  color: var(--text-dim);
+  text-align: center;
+}
+.restoring-icon {
+  display: grid;
+  place-items: center;
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  font-size: 32px;
+  color: var(--accent-2);
+  background: rgba(139, 92, 246, 0.12);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 0.6; transform: scale(0.96); }
+  50% { opacity: 1; transform: scale(1); }
 }
 
 .track {
@@ -472,6 +554,13 @@ input[type='range']::-moz-range-thumb {
   .track .play-hover {
     display: block;
   }
+  .remove-btn {
+    opacity: 1;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
 }
 
 .playlist-body {
@@ -533,7 +622,7 @@ input[type='range']::-moz-range-thumb {
   }
   .playlist-head,
   .track {
-    grid-template-columns: 44px 1fr 64px;
+    grid-template-columns: 44px 1fr 52px 44px;
     gap: 8px;
     padding: 0 10px;
   }
