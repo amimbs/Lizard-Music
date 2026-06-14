@@ -19,7 +19,9 @@ import {
   getTrackDeleteMode,
   getTrackDeleteConfirmCopy,
   getPlaylistDeleteConfirmCopy,
+  getClearLibraryConfirmCopy,
 } from './utils/deleteConfirm.js'
+import { switchView } from './utils/view.js'
 
 export default function App() {
   const fileInputRef = useRef(null)
@@ -29,6 +31,7 @@ export default function App() {
   const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deletePlaylistConfirmId, setDeletePlaylistConfirmId] = useState(null)
+  const [clearLibraryStep, setClearLibraryStep] = useState(null)
 
   const { registerUrl, revokeUrl } = useObjectUrls()
 
@@ -46,6 +49,7 @@ export default function App() {
     addTrackToPlaylist,
     removeTrackFromPlaylist,
     toggleFavorite,
+    clearLibrary,
   } = useMusicLibrary({ registerUrl, revokeUrl })
 
   const {
@@ -157,6 +161,38 @@ export default function App() {
     setDeletePlaylistConfirmId(null)
   }, [deletePlaylistConfirmId, removePlaylist, selectedPlaylistId])
 
+  const hasLibraryContent = tracks.length > 0 || playlists.length > 0
+
+  const handleRequestClearLibrary = useCallback(() => {
+    if (!hasLibraryContent) return
+    setClearLibraryStep('first')
+  }, [hasLibraryContent])
+
+  const confirmClearLibrary = useCallback(async () => {
+    await clearLibrary()
+    setClearLibraryStep(null)
+    setCurrentIndex(-1)
+    setIsPlaying(false)
+    switchView(setView, setSelectedPlaylistId, setSearch, 'songs')
+    setDeleteConfirm(null)
+    setDeletePlaylistConfirmId(null)
+    setAddToPlaylistTrackId(null)
+    const audio = audioRef.current
+    if (audio) {
+      audio.pause()
+      audio.removeAttribute('src')
+      audio.load()
+    }
+  }, [
+    clearLibrary,
+    setCurrentIndex,
+    setIsPlaying,
+    setView,
+    setSelectedPlaylistId,
+    setSearch,
+    audioRef,
+  ])
+
   useMediaSession({
     currentTrack,
     progress,
@@ -174,6 +210,7 @@ export default function App() {
 
   const trackDeleteCopy = deleteConfirm ? getTrackDeleteConfirmCopy(deleteConfirm.mode) : null
   const playlistDeleteCopy = deletePlaylistConfirm ? getPlaylistDeleteConfirmCopy() : null
+  const clearLibraryCopy = clearLibraryStep ? getClearLibraryConfirmCopy(clearLibraryStep) : null
 
   return (
     <div className="app">
@@ -187,6 +224,8 @@ export default function App() {
         fileInputRef={fileInputRef}
         folderInputRef={folderInputRef}
         onAddFiles={handleAddFiles}
+        onDeleteLibrary={handleRequestClearLibrary}
+        hasLibraryContent={hasLibraryContent}
       />
 
       <StorageBanner message={storageError} onDismiss={() => setStorageError('')} />
@@ -301,6 +340,22 @@ export default function App() {
           confirmDanger
           onConfirm={confirmDeletePlaylist}
           onCancel={() => setDeletePlaylistConfirmId(null)}
+        />
+      )}
+
+      {clearLibraryStep && clearLibraryCopy && (
+        <ConfirmModal
+          title={clearLibraryCopy.title}
+          message={clearLibraryCopy.message}
+          confirmLabel={clearLibraryCopy.confirmLabel}
+          cancelLabel="Cancel"
+          confirmDanger
+          onConfirm={
+            clearLibraryStep === 'first'
+              ? () => setClearLibraryStep('final')
+              : confirmClearLibrary
+          }
+          onCancel={() => setClearLibraryStep(null)}
         />
       )}
     </div>

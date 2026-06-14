@@ -19,6 +19,8 @@ export function TopBar({
   fileInputRef,
   folderInputRef,
   onAddFiles,
+  onDeleteLibrary,
+  hasLibraryContent,
 }) {
   const handleViewChange = (nextView) => {
     switchView(setView, setSelectedPlaylistId, setSearch, nextView)
@@ -54,6 +56,8 @@ export function TopBar({
           <NavAddMenu
             onAddFiles={() => fileInputRef.current?.click()}
             onAddFolder={() => folderInputRef.current?.click()}
+            onDeleteLibrary={onDeleteLibrary}
+            hasLibraryContent={hasLibraryContent}
           />
         </div>
       </nav>

@@ -7,6 +7,7 @@ import {
   getAllPlaylists,
   putPlaylist,
   deletePlaylist,
+  clearLibrary as clearLibraryDb,
   trackToRecord,
   requestPersistentStorage,
   isQuotaError,
@@ -237,6 +238,21 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     }
   }, [tracks])
 
+  const clearLibrary = useCallback(async () => {
+    tracks.forEach((track) => {
+      revokeUrl(track.url)
+      if (track.cover) revokeUrl(track.cover)
+    })
+    setTracks([])
+    setPlaylists([])
+    probedDurationRef.current.clear()
+    try {
+      await clearLibraryDb()
+    } catch {
+      // In-memory state already updated.
+    }
+  }, [tracks, revokeUrl])
+
   useEffect(() => {
     let cancelled = false
     ;(async () => {
@@ -314,5 +330,6 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     addTrackToPlaylist,
     removeTrackFromPlaylist,
     toggleFavorite,
+    clearLibrary,
   }
 }

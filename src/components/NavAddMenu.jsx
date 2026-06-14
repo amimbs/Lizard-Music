@@ -1,10 +1,10 @@
 import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
-import { IconFile, IconFolder, IconMenu } from '../icons.jsx'
+import { IconFile, IconFolder, IconMenu, IconTrash } from '../icons.jsx'
 import { NAV_ADD_MENU_WIDTH } from '../constants.js'
 import { useFixedDropdown, useDropdownDismiss } from '../hooks/useDropdown.js'
 
-export function NavAddMenu({ onAddFiles, onAddFolder }) {
+export function NavAddMenu({ onAddFiles, onAddFolder, onDeleteLibrary, hasLibraryContent }) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef(null)
   const menuRef = useRef(null)
@@ -24,7 +24,7 @@ export function NavAddMenu({ onAddFiles, onAddFolder }) {
         type="button"
         className="nav-menu-trigger"
         onClick={() => setOpen((value) => !value)}
-        aria-label="Add music"
+        aria-label="Library menu"
         aria-haspopup="menu"
         aria-expanded={open}
       >
@@ -59,6 +59,17 @@ export function NavAddMenu({ onAddFiles, onAddFolder }) {
             >
               <IconFolder />
               <span>Add folder</span>
+            </button>
+            <div className="menu-divider" role="separator" />
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item danger"
+              disabled={!hasLibraryContent}
+              onClick={runAction(onDeleteLibrary)}
+            >
+              <IconTrash />
+              <span>Delete library</span>
             </button>
           </div>,
           document.body,

@@ -24,4 +24,4 @@ export const VIEW_TITLES = {
 }
 
 export const TRACK_MENU_WIDTH = 220
-export const NAV_ADD_MENU_WIDTH = 200
+export const NAV_ADD_MENU_WIDTH = 220

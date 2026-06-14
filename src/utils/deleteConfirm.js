@@ -26,3 +26,21 @@ export function getPlaylistDeleteConfirmCopy() {
     confirmLabel: 'Delete playlist',
   }
 }
+
+export function getClearLibraryConfirmCopy(step) {
+  if (step === 'final') {
+    return {
+      title: 'Are you REALLY sure?',
+      message:
+        'This is your last chance. Every song, favorite, and playlist will be permanently erased from this device.',
+      confirmLabel: 'Yes, delete everything',
+    }
+  }
+
+  return {
+    title: 'Delete entire library?',
+    message:
+      'This permanently removes all songs, favorites, and playlists from this device. You will need to add your music again.',
+    confirmLabel: 'Continue',
+  }
+}

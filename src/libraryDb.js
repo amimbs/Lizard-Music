@@ -99,6 +99,17 @@ export async function deletePlaylist(id) {
   })
 }
 
+export async function clearLibrary() {
+  await Promise.all([
+    withStore(TRACKS_STORE, 'readwrite', (store) => {
+      store.clear()
+    }),
+    withStore(PLAYLISTS_STORE, 'readwrite', (store) => {
+      store.clear()
+    }),
+  ])
+}
+
 let persistentStorageRequested = false
 
 export async function requestPersistentStorage() {

@@ -10,6 +10,7 @@ vi.mock('../libraryDb.js', () => ({
   deleteTrack: vi.fn(),
   putPlaylist: vi.fn(),
   deletePlaylist: vi.fn(),
+  clearLibrary: vi.fn(),
   trackToRecord: vi.fn((track) => track),
   requestPersistentStorage: vi.fn(),
   isQuotaError: vi.fn(),
@@ -51,6 +52,7 @@ describe('useMusicLibrary', () => {
     ])
     libraryDb.deletePlaylist.mockResolvedValue(undefined)
     libraryDb.deleteTrack.mockResolvedValue(undefined)
+    libraryDb.clearLibrary.mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -109,6 +111,21 @@ describe('useMusicLibrary', () => {
       expect(result.current.tracks.map((t) => t.id)).toEqual(['t2'])
       expect(libraryDb.deleteTrack).toHaveBeenCalledWith('t1')
       expect(libraryDb.deletePlaylist).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('clearLibrary', () => {
+    it('removes all tracks and playlists from memory and storage', async () => {
+      const { result } = await loadLibrary()
+
+      await act(async () => {
+        await result.current.clearLibrary()
+      })
+
+      expect(result.current.tracks).toHaveLength(0)
+      expect(result.current.playlists).toHaveLength(0)
+      expect(libraryDb.clearLibrary).toHaveBeenCalledOnce()
+      expect(revokeUrl).toHaveBeenCalled()
     })
   })
 })

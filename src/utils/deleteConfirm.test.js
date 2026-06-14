@@ -3,6 +3,7 @@ import {
   getTrackDeleteMode,
   getTrackDeleteConfirmCopy,
   getPlaylistDeleteConfirmCopy,
+  getClearLibraryConfirmCopy,
 } from './deleteConfirm.js'
 
 describe('getTrackDeleteMode', () => {
@@ -39,5 +40,21 @@ describe('getPlaylistDeleteConfirmCopy', () => {
     expect(copy.title).toBe('Delete playlist?')
     expect(copy.message).toContain('All songs will stay in your library')
     expect(copy.confirmLabel).toBe('Delete playlist')
+  })
+})
+
+describe('getClearLibraryConfirmCopy', () => {
+  it('returns the first-step warning', () => {
+    const copy = getClearLibraryConfirmCopy('first')
+    expect(copy.title).toBe('Delete entire library?')
+    expect(copy.message).toContain('all songs, favorites, and playlists')
+    expect(copy.confirmLabel).toBe('Continue')
+  })
+
+  it('returns the final confirmation prompt', () => {
+    const copy = getClearLibraryConfirmCopy('final')
+    expect(copy.title).toBe('Are you REALLY sure?')
+    expect(copy.message).toContain('last chance')
+    expect(copy.confirmLabel).toBe('Yes, delete everything')
   })
 })

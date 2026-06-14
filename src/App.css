@@ -217,6 +217,19 @@
   color: #f87171;
   background: rgba(248, 113, 113, 0.12);
 }
+.menu-item:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+.menu-item:disabled:hover {
+  color: #fca5a5;
+  background: transparent;
+}
+.menu-divider {
+  height: 1px;
+  margin: 6px 0;
+  background: var(--border);
+}
 .menu-item svg {
   flex-shrink: 0;
   font-size: 18px;
