@@ -65,6 +65,15 @@ npm run build
 npm run preview
 ```
 
+## Tests
+
+```bash
+npm run test:run   # run once
+npm test           # watch mode while developing
+```
+
+See [docs/TESTING.md](docs/TESTING.md) for what's covered and how to add tests.
+
 ## Deploy to GitHub Pages
 
 Pushes to `main` automatically deploy via GitHub Actions (`.github/workflows/deploy.yml`).
