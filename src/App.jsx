@@ -700,39 +700,48 @@ export default function App() {
           <span className="brand-icon"><IconMusic /></span>
           <span className="brand-name">Local Music</span>
         </div>
-        <nav className="nav" aria-label="Library views">
-          <button
-            type="button"
-            className={view === 'songs' ? 'active' : ''}
-            onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'songs')}
-            aria-current={view === 'songs' ? 'page' : undefined}
-          >
-            Songs
-          </button>
-          <button
-            type="button"
-            className={view === 'recent' ? 'active' : ''}
-            onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'recent')}
-            aria-current={view === 'recent' ? 'page' : undefined}
-          >
-            Recently Added
-          </button>
-          <button
-            type="button"
-            className={view === 'favorites' ? 'active' : ''}
-            onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'favorites')}
-            aria-current={view === 'favorites' ? 'page' : undefined}
-          >
-            Favorites
-          </button>
-          <button
-            type="button"
-            className={view === 'playlists' ? 'active' : ''}
-            onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'playlists')}
-            aria-current={view === 'playlists' ? 'page' : undefined}
-          >
-            Playlists
-          </button>
+        <nav className="nav" aria-label="Library">
+          <div className="nav-views" role="group" aria-label="Library views">
+            <button
+              type="button"
+              className={view === 'songs' ? 'active' : ''}
+              onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'songs')}
+              aria-current={view === 'songs' ? 'page' : undefined}
+            >
+              Songs
+            </button>
+            <button
+              type="button"
+              className={view === 'recent' ? 'active' : ''}
+              onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'recent')}
+              aria-current={view === 'recent' ? 'page' : undefined}
+            >
+              Recently Added
+            </button>
+            <button
+              type="button"
+              className={view === 'favorites' ? 'active' : ''}
+              onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'favorites')}
+              aria-current={view === 'favorites' ? 'page' : undefined}
+            >
+              Favorites
+            </button>
+            <button
+              type="button"
+              className={view === 'playlists' ? 'active' : ''}
+              onClick={() => switchView(setView, setSelectedPlaylistId, setSearch, 'playlists')}
+              aria-current={view === 'playlists' ? 'page' : undefined}
+            >
+              Playlists
+            </button>
+          </div>
+          <div className="nav-tools">
+            <span className="nav-divider" aria-hidden="true" />
+            <NavAddMenu
+              onAddFiles={() => fileInputRef.current?.click()}
+              onAddFolder={() => folderInputRef.current?.click()}
+            />
+          </div>
         </nav>
         <div className="search">
           <IconSearch />
@@ -742,22 +751,6 @@ export default function App() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
-        </div>
-        <div className="actions">
-          <button
-            className="btn primary btn-icon-only"
-            aria-label="Add files"
-            onClick={() => fileInputRef.current?.click()}
-          >
-            <IconFile /> <span className="btn-label">Add files</span>
-          </button>
-          <button
-            className="btn btn-icon-only"
-            aria-label="Add folder"
-            onClick={() => folderInputRef.current?.click()}
-          >
-            <IconFolder /> <span className="btn-label">Add folder</span>
-          </button>
         </div>
         <input
           ref={fileInputRef}
@@ -1079,7 +1072,7 @@ const TrackRow = memo(function TrackRow({
   removeLabel,
 }) {
   const handleRowClick = (e) => {
-    if (e.target.closest('button') || e.target.closest('.track-menu-dropdown')) return
+    if (e.target.closest('button') || e.target.closest('.menu-dropdown')) return
     onPlay()
   }
 
@@ -1130,12 +1123,10 @@ const TrackRow = memo(function TrackRow({
 })
 
 const TRACK_MENU_WIDTH = 220
+const NAV_ADD_MENU_WIDTH = 200
 
-function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist, onRemove }) {
-  const [open, setOpen] = useState(false)
+function useFixedDropdown(open, triggerRef, menuRef, menuWidth) {
   const [position, setPosition] = useState({ top: 0, left: 0 })
-  const triggerRef = useRef(null)
-  const menuRef = useRef(null)
 
   useLayoutEffect(() => {
     if (!open) return
@@ -1145,13 +1136,13 @@ function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist,
       if (!trigger) return
 
       const rect = trigger.getBoundingClientRect()
-      const menuHeight = menuRef.current?.offsetHeight ?? 148
+      const menuHeight = menuRef.current?.offsetHeight ?? 100
       const spaceBelow = window.innerHeight - rect.bottom
       const openUp = spaceBelow < menuHeight + 12 && rect.top > menuHeight + 12
       const top = openUp ? rect.top - menuHeight - 6 : rect.bottom + 6
       const left = Math.max(
         8,
-        Math.min(rect.right - TRACK_MENU_WIDTH, window.innerWidth - TRACK_MENU_WIDTH - 8),
+        Math.min(rect.right - menuWidth, window.innerWidth - menuWidth - 8),
       )
 
       setPosition({ top, left })
@@ -1161,6 +1152,20 @@ function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist,
     const frame = requestAnimationFrame(updatePosition)
     window.addEventListener('resize', updatePosition)
     window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [open, menuWidth, triggerRef, menuRef])
+
+  return position
+}
+
+function useDropdownDismiss(open, setOpen, triggerRef, menuRef) {
+  useEffect(() => {
+    if (!open) return
 
     const handlePointerDown = (e) => {
       if (triggerRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return
@@ -1174,13 +1179,81 @@ function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist,
     document.addEventListener('keydown', handleKeyDown)
 
     return () => {
-      cancelAnimationFrame(frame)
-      window.removeEventListener('resize', updatePosition)
-      window.removeEventListener('scroll', updatePosition, true)
       document.removeEventListener('mousedown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
     }
-  }, [open])
+  }, [open, setOpen, triggerRef, menuRef])
+}
+
+function NavAddMenu({ onAddFiles, onAddFolder }) {
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
+  const position = useFixedDropdown(open, triggerRef, menuRef, NAV_ADD_MENU_WIDTH)
+  useDropdownDismiss(open, setOpen, triggerRef, menuRef)
+
+  const runAction = (action) => (e) => {
+    e.stopPropagation()
+    setOpen(false)
+    action()
+  }
+
+  return (
+    <div className={`nav-menu ${open ? 'open' : ''}`}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className="nav-menu-trigger"
+        onClick={() => setOpen((value) => !value)}
+        aria-label="Add music"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <IconMenu />
+      </button>
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="menu-dropdown"
+            role="menu"
+            style={{
+              top: `${position.top}px`,
+              left: `${position.left}px`,
+              width: `${NAV_ADD_MENU_WIDTH}px`,
+            }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item primary"
+              onClick={runAction(onAddFiles)}
+            >
+              <IconFile />
+              <span>Add files</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              onClick={runAction(onAddFolder)}
+            >
+              <IconFolder />
+              <span>Add folder</span>
+            </button>
+          </div>,
+          document.body,
+        )}
+    </div>
+  )
+}
+
+function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist, onRemove }) {
+  const [open, setOpen] = useState(false)
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
+  const position = useFixedDropdown(open, triggerRef, menuRef, TRACK_MENU_WIDTH)
+  useDropdownDismiss(open, setOpen, triggerRef, menuRef)
 
   const runAction = (action) => (e) => {
     e.stopPropagation()
@@ -1208,14 +1281,14 @@ function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist,
         createPortal(
           <div
             ref={menuRef}
-            className="track-menu-dropdown"
+            className="menu-dropdown"
             role="menu"
             style={{ top: `${position.top}px`, left: `${position.left}px`, width: `${TRACK_MENU_WIDTH}px` }}
           >
             <button
               type="button"
               role="menuitem"
-              className={`track-menu-item ${isFavorite ? 'active' : ''}`}
+              className={`menu-item ${isFavorite ? 'active' : ''}`}
               onClick={runAction(onToggleFavorite)}
             >
               {isFavorite ? <IconHeartFilled /> : <IconHeart />}
@@ -1224,7 +1297,7 @@ function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist,
             <button
               type="button"
               role="menuitem"
-              className="track-menu-item"
+              className="menu-item"
               onClick={runAction(onAddToPlaylist)}
             >
               <IconPlaylistAdd />
@@ -1233,7 +1306,7 @@ function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist,
             <button
               type="button"
               role="menuitem"
-              className="track-menu-item danger"
+              className="menu-item danger"
               onClick={runAction(onRemove)}
             >
               <IconTrash />
