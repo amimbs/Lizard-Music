@@ -14,6 +14,12 @@ import { PlayerFooter } from './components/PlayerFooter.jsx'
 import { StorageBanner } from './components/StorageBanner.jsx'
 import { InstallBanner } from './components/InstallBanner.jsx'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
+import { ConfirmModal } from './components/ConfirmModal.jsx'
+import {
+  getTrackDeleteMode,
+  getTrackDeleteConfirmCopy,
+  getPlaylistDeleteConfirmCopy,
+} from './utils/deleteConfirm.js'
 
 export default function App() {
   const fileInputRef = useRef(null)
@@ -21,6 +27,8 @@ export default function App() {
 
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState(null)
+  const [deleteConfirm, setDeleteConfirm] = useState(null)
+  const [deletePlaylistConfirmId, setDeletePlaylistConfirmId] = useState(null)
 
   const { registerUrl, revokeUrl } = useObjectUrls()
 
@@ -104,24 +112,50 @@ export default function App() {
 
   const handleRemoveTrack = useCallback(
     (id) => {
-      if (view === 'playlists' && selectedPlaylistId) {
-        removeTrackFromPlaylist(selectedPlaylistId, id)
-        return
-      }
-      removeTrack(id, playbackControls)
+      setDeleteConfirm({ trackId: id, mode: getTrackDeleteMode(view, selectedPlaylistId) })
     },
-    [view, selectedPlaylistId, removeTrackFromPlaylist, removeTrack, playbackControls],
+    [view, selectedPlaylistId],
   )
+
+  const deleteConfirmTrack = useMemo(
+    () =>
+      deleteConfirm ? tracks.find((t) => t.id === deleteConfirm.trackId) ?? null : null,
+    [deleteConfirm, tracks],
+  )
+
+  const confirmRemoveTrack = useCallback(() => {
+    if (!deleteConfirm) return
+    const { trackId, mode } = deleteConfirm
+    if (mode === 'playlist') {
+      removeTrackFromPlaylist(selectedPlaylistId, trackId)
+    } else {
+      removeTrack(trackId, playbackControls)
+    }
+    setDeleteConfirm(null)
+  }, [deleteConfirm, selectedPlaylistId, removeTrackFromPlaylist, removeTrack, playbackControls])
 
   const handleCreatePlaylist = useCallback(async () => {
     const created = await createPlaylist(newPlaylistName)
     if (created) setNewPlaylistName('')
   }, [createPlaylist, newPlaylistName])
 
-  const handleDeletePlaylist = useCallback(
-    (id) => removePlaylist(id, setSelectedPlaylistId, selectedPlaylistId),
-    [removePlaylist, selectedPlaylistId],
+  const handleDeletePlaylist = useCallback((id) => {
+    setDeletePlaylistConfirmId(id)
+  }, [])
+
+  const deletePlaylistConfirm = useMemo(
+    () =>
+      deletePlaylistConfirmId
+        ? playlists.find((p) => p.id === deletePlaylistConfirmId) ?? null
+        : null,
+    [deletePlaylistConfirmId, playlists],
   )
+
+  const confirmDeletePlaylist = useCallback(() => {
+    if (!deletePlaylistConfirmId) return
+    removePlaylist(deletePlaylistConfirmId, setSelectedPlaylistId, selectedPlaylistId)
+    setDeletePlaylistConfirmId(null)
+  }, [deletePlaylistConfirmId, removePlaylist, selectedPlaylistId])
 
   useMediaSession({
     currentTrack,
@@ -137,6 +171,9 @@ export default function App() {
 
   const pickFiles = useCallback(() => fileInputRef.current?.click(), [])
   const pickFolder = useCallback(() => folderInputRef.current?.click(), [])
+
+  const trackDeleteCopy = deleteConfirm ? getTrackDeleteConfirmCopy(deleteConfirm.mode) : null
+  const playlistDeleteCopy = deletePlaylistConfirm ? getPlaylistDeleteConfirmCopy() : null
 
   return (
     <div className="app">
@@ -238,6 +275,32 @@ export default function App() {
             setAddToPlaylistTrackId(null)
           }}
           onClose={() => setAddToPlaylistTrackId(null)}
+        />
+      )}
+
+      {deleteConfirm && deleteConfirmTrack && trackDeleteCopy && (
+        <ConfirmModal
+          title={trackDeleteCopy.title}
+          subtitle={`${deleteConfirmTrack.title} · ${deleteConfirmTrack.artist}`}
+          message={trackDeleteCopy.message}
+          confirmLabel={trackDeleteCopy.confirmLabel}
+          cancelLabel="Cancel"
+          confirmDanger
+          onConfirm={confirmRemoveTrack}
+          onCancel={() => setDeleteConfirm(null)}
+        />
+      )}
+
+      {deletePlaylistConfirm && playlistDeleteCopy && (
+        <ConfirmModal
+          title={playlistDeleteCopy.title}
+          subtitle={deletePlaylistConfirm.name}
+          message={playlistDeleteCopy.message}
+          confirmLabel={playlistDeleteCopy.confirmLabel}
+          cancelLabel="Cancel"
+          confirmDanger
+          onConfirm={confirmDeletePlaylist}
+          onCancel={() => setDeletePlaylistConfirmId(null)}
         />
       )}
     </div>

@@ -25,6 +25,7 @@ Tests focus on small, predictable pieces of logic — not the full app UI end-to
 | `async.test.js` | Processing many items at once without exceeding a concurrency limit |
 | `tracks.test.js` | Sorting songs by title/artist; building shuffle play order |
 | `view.test.js` | Switching library tabs and search box placeholder text |
+| `deleteConfirm.test.js` | Delete confirmation mode and user-facing copy for songs and playlists |
 
 ### Library storage (`src/libraryDb.test.js`)
 
@@ -38,14 +39,17 @@ Tests focus on small, predictable pieces of logic — not the full app UI end-to
 | File | What it checks |
 |------|----------------|
 | `useTrackViews.test.jsx` | Songs, Favorites, Recent, and playlist views; search filtering; play order |
+| `useMusicLibrary.test.jsx` | Playlist delete keeps tracks; track delete removes from library only |
 
 ### Components (`src/components/`)
 
 | File | What it checks |
 |------|----------------|
 | `StorageBanner.test.jsx` | Warning banner shows a message and the dismiss button works |
+| `ConfirmModal.test.jsx` | Focus, confirm/cancel, Escape, overlay dismiss, delete copy |
+| `PlaylistsBrowser.test.jsx` | Delete requests confirmation via callback; playlist card opens playlist |
 
-**Not covered yet:** full playback (`usePlayback`), file import (`useMusicLibrary`), dropdown menus, and most UI components. Those rely more on browser APIs and user interaction; they're better suited to manual testing or future integration tests.
+**Not covered yet:** full playback (`usePlayback`), file import flow, dropdown menus, and end-to-end App wiring. Those rely more on browser APIs and user interaction; they're better suited to manual testing or future integration tests.
 
 ## Where test files live
 

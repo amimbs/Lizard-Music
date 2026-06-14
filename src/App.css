@@ -162,6 +162,14 @@
 .btn.primary:hover {
   filter: brightness(1.08);
 }
+.btn.danger {
+  color: #fff;
+  background: #dc2626;
+  border-color: #dc2626;
+}
+.btn.danger:hover {
+  filter: brightness(1.08);
+}
 
 .menu-dropdown {
   position: fixed;
@@ -486,6 +494,21 @@
   color: var(--text-dim);
   text-align: center;
   padding: 12px 0;
+}
+
+.confirm-modal {
+  max-width: 360px;
+}
+.confirm-modal-message {
+  margin: 0 0 20px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--text-dim);
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
 }
 
 .view-empty {

@@ -71,7 +71,10 @@ export function PlaylistsBrowser({
               <button
                 type="button"
                 className="playlist-card-delete"
-                onClick={() => onDeletePlaylist(playlist.id)}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDeletePlaylist(playlist.id)
+                }}
                 aria-label={`Delete ${playlist.name}`}
               >
                 <IconTrash />
