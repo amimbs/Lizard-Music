@@ -1,4 +1,5 @@
-import { useState, useRef, useEffect, useCallback, useMemo, memo } from 'react'
+import { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo, memo } from 'react'
+import { createPortal } from 'react-dom'
 import { useVirtualizer } from '@tanstack/react-virtual'
 import { parseBlob } from 'music-metadata-browser'
 import './App.css'
@@ -23,6 +24,7 @@ import {
   IconPlaylistAdd,
   IconPlus,
   IconBack,
+  IconMenu,
 } from './icons.jsx'
 import {
   getAllTracks,
@@ -1077,23 +1079,8 @@ const TrackRow = memo(function TrackRow({
   removeLabel,
 }) {
   const handleRowClick = (e) => {
-    if (e.target.closest('button')) return
+    if (e.target.closest('button') || e.target.closest('.track-menu-dropdown')) return
     onPlay()
-  }
-
-  const handleToggleFavorite = (e) => {
-    e.stopPropagation()
-    onToggleFavorite()
-  }
-
-  const handleAddToPlaylist = (e) => {
-    e.stopPropagation()
-    onAddToPlaylist()
-  }
-
-  const handleRemove = (e) => {
-    e.stopPropagation()
-    onRemove()
   }
 
   return (
@@ -1130,34 +1117,134 @@ const TrackRow = memo(function TrackRow({
       </div>
       <div className="col-dur">{track.duration ? formatTime(track.duration) : '—'}</div>
       <div className="col-actions track-actions">
-        <button
-          type="button"
-          className={`favorite-btn ${isFavorite ? 'active' : ''}`}
-          onClick={handleToggleFavorite}
-          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
-        >
-          {isFavorite ? <IconHeartFilled /> : <IconHeart />}
-        </button>
-        <button
-          type="button"
-          className="playlist-btn"
-          onClick={handleAddToPlaylist}
-          aria-label="Add to playlist"
-        >
-          <IconPlaylistAdd />
-        </button>
-        <button
-          type="button"
-          className="remove-btn"
-          onClick={handleRemove}
-          aria-label={removeLabel}
-        >
-          <IconTrash />
-        </button>
+        <TrackMenu
+          isFavorite={isFavorite}
+          removeLabel={removeLabel}
+          onToggleFavorite={onToggleFavorite}
+          onAddToPlaylist={onAddToPlaylist}
+          onRemove={onRemove}
+        />
       </div>
     </div>
   )
 })
+
+const TRACK_MENU_WIDTH = 220
+
+function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist, onRemove }) {
+  const [open, setOpen] = useState(false)
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+  const triggerRef = useRef(null)
+  const menuRef = useRef(null)
+
+  useLayoutEffect(() => {
+    if (!open) return
+
+    const updatePosition = () => {
+      const trigger = triggerRef.current
+      if (!trigger) return
+
+      const rect = trigger.getBoundingClientRect()
+      const menuHeight = menuRef.current?.offsetHeight ?? 148
+      const spaceBelow = window.innerHeight - rect.bottom
+      const openUp = spaceBelow < menuHeight + 12 && rect.top > menuHeight + 12
+      const top = openUp ? rect.top - menuHeight - 6 : rect.bottom + 6
+      const left = Math.max(
+        8,
+        Math.min(rect.right - TRACK_MENU_WIDTH, window.innerWidth - TRACK_MENU_WIDTH - 8),
+      )
+
+      setPosition({ top, left })
+    }
+
+    updatePosition()
+    const frame = requestAnimationFrame(updatePosition)
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    const handlePointerDown = (e) => {
+      if (triggerRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setOpen(false)
+    }
+
+    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [open])
+
+  const runAction = (action) => (e) => {
+    e.stopPropagation()
+    setOpen(false)
+    action()
+  }
+
+  return (
+    <div className={`track-menu ${open ? 'open' : ''}`}>
+      <button
+        ref={triggerRef}
+        type="button"
+        className={`track-menu-trigger ${isFavorite ? 'has-favorite' : ''}`}
+        onClick={(e) => {
+          e.stopPropagation()
+          setOpen((value) => !value)
+        }}
+        aria-label="Song actions"
+        aria-haspopup="menu"
+        aria-expanded={open}
+      >
+        <IconMenu />
+      </button>
+      {open &&
+        createPortal(
+          <div
+            ref={menuRef}
+            className="track-menu-dropdown"
+            role="menu"
+            style={{ top: `${position.top}px`, left: `${position.left}px`, width: `${TRACK_MENU_WIDTH}px` }}
+          >
+            <button
+              type="button"
+              role="menuitem"
+              className={`track-menu-item ${isFavorite ? 'active' : ''}`}
+              onClick={runAction(onToggleFavorite)}
+            >
+              {isFavorite ? <IconHeartFilled /> : <IconHeart />}
+              <span>{isFavorite ? 'Remove from favorites' : 'Add to favorites'}</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="track-menu-item"
+              onClick={runAction(onAddToPlaylist)}
+            >
+              <IconPlaylistAdd />
+              <span>Add to playlist</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="track-menu-item danger"
+              onClick={runAction(onRemove)}
+            >
+              <IconTrash />
+              <span>{removeLabel}</span>
+            </button>
+          </div>,
+          document.body,
+        )}
+    </div>
+  )
+}
 
 function PlaylistsBrowser({
   playlists,

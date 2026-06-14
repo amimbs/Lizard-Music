@@ -440,7 +440,7 @@
 .playlist-head,
 .track {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 56px 112px;
+  grid-template-columns: 48px minmax(0, 1fr) 56px 44px;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
@@ -475,12 +475,13 @@
   display: flex;
   align-items: center;
   justify-content: flex-end;
-  gap: 2px;
 }
 
-.favorite-btn,
-.playlist-btn,
-.remove-btn {
+.track-menu {
+  position: relative;
+}
+
+.track-menu-trigger {
   display: grid;
   place-items: center;
   width: 36px;
@@ -492,31 +493,68 @@
   opacity: 0;
   transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
-.track:hover .favorite-btn,
-.track:hover .playlist-btn,
-.track:hover .remove-btn,
-.track:focus-within .favorite-btn,
-.track:focus-within .playlist-btn,
-.track:focus-within .remove-btn {
+.track:hover .track-menu-trigger,
+.track:focus-within .track-menu-trigger,
+.track-menu.open .track-menu-trigger {
   opacity: 1;
 }
-.favorite-btn:hover,
-.playlist-btn:hover {
-  color: var(--accent);
-  background: rgba(139, 92, 246, 0.12);
+.track-menu-trigger:hover {
+  color: var(--text);
+  background: var(--bg-elev-2);
 }
-.favorite-btn.active {
+.track-menu-trigger.has-favorite {
   opacity: 1;
   color: var(--accent);
 }
-.favorite-btn:active,
-.playlist-btn:active,
-.remove-btn:active {
+.track-menu-trigger:active {
   transform: scale(0.95);
 }
-.remove-btn:hover {
+
+.track-menu-dropdown {
+  position: fixed;
+  z-index: 90;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 6px;
+  border-radius: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.track-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  color: var(--text);
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.track-menu-item:hover {
+  background: var(--bg-elev-2);
+}
+.track-menu-item.active {
+  color: var(--accent);
+}
+.track-menu-item.danger {
+  color: #fca5a5;
+}
+.track-menu-item.danger:hover {
   color: #f87171;
   background: rgba(248, 113, 113, 0.12);
+}
+.track-menu-item svg {
+  flex-shrink: 0;
+  font-size: 18px;
+}
+.track-menu-item span {
+  min-width: 0;
 }
 
 .storage-banner {
@@ -981,17 +1019,12 @@ input[type='range']::-moz-range-thumb {
   .track .play-hover {
     display: block;
   }
-  .favorite-btn,
-  .playlist-btn,
-  .remove-btn {
+  .track-menu-trigger {
     opacity: 1;
     width: 44px;
     height: 44px;
     min-width: 44px;
     min-height: 44px;
-  }
-  .favorite-btn.active {
-    opacity: 1;
   }
   .create-playlist {
     flex-direction: column;
@@ -1107,7 +1140,7 @@ input[type='range']::-moz-range-thumb {
   }
   .playlist-head,
   .track {
-    grid-template-columns: 44px minmax(0, 1fr) 52px 112px;
+    grid-template-columns: 44px minmax(0, 1fr) 52px 44px;
     gap: 8px;
     padding: 0 10px;
   }
