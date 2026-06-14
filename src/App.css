@@ -623,10 +623,6 @@
   color: var(--text);
   background: var(--bg-elev-2);
 }
-.track-menu-trigger.has-favorite {
-  opacity: 1;
-  color: var(--accent);
-}
 .track-menu-trigger:active {
   transform: scale(0.95);
 }

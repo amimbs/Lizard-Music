@@ -28,7 +28,7 @@ export function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPl
       <button
         ref={triggerRef}
         type="button"
-        className={`track-menu-trigger ${isFavorite ? 'has-favorite' : ''}`}
+        className="track-menu-trigger"
         onClick={(e) => {
           e.stopPropagation()
           setOpen((value) => !value)
