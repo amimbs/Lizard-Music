@@ -434,7 +434,7 @@
 .playlist-head,
 .track {
   display: grid;
-  grid-template-columns: 48px 1fr 28% 56px 112px;
+  grid-template-columns: 48px 1fr 56px 112px;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
@@ -694,13 +694,6 @@
 .t-artist {
   font-size: 12.5px;
   color: var(--text-dim);
-}
-.col-album {
-  color: var(--text-dim);
-  font-size: 13px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
 }
 
 .no-results {
@@ -1094,9 +1087,7 @@ input[type='range']::-moz-range-thumb {
   .page-count {
     font-size: 13px;
   }
-  .brand-name,
-  .col-album,
-  .playlist-head .col-album {
+  .brand-name {
     display: none;
   }
   .playlist-head,

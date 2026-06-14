@@ -90,6 +90,24 @@ async function mapWithConcurrency(items, limit, fn) {
   await Promise.all(workers)
 }
 
+function probeDuration(file) {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file)
+    const audio = new Audio()
+    audio.preload = 'metadata'
+    audio.onloadedmetadata = () => {
+      const duration = audio.duration
+      URL.revokeObjectURL(url)
+      resolve(Number.isFinite(duration) ? duration : 0)
+    }
+    audio.onerror = () => {
+      URL.revokeObjectURL(url)
+      resolve(0)
+    }
+    audio.src = url
+  })
+}
+
 export default function App() {
   const [tracks, setTracks] = useState([])
   const [currentIndex, setCurrentIndex] = useState(-1)
@@ -117,6 +135,7 @@ export default function App() {
   const shuffleOrderRef = useRef([])
   const contentRef = useRef(null)
   const urlRegistryRef = useRef(new Set())
+  const probedDurationRef = useRef(new Set())
 
   const currentTrack = currentIndex >= 0 ? tracks[currentIndex] : null
   const selectedPlaylist = useMemo(
@@ -152,7 +171,7 @@ export default function App() {
   const parseTrackMetadata = useCallback(async (track) => {
     let updated = { ...track }
     try {
-      const metadata = await parseBlob(track.file, { duration: false })
+      const metadata = await parseBlob(track.file, { duration: true })
       const { common, format } = metadata
       let cover = null
       let coverBlob = null
@@ -163,15 +182,18 @@ export default function App() {
         coverMime = pic.format
         cover = registerUrl(URL.createObjectURL(coverBlob))
       }
+      let trackDuration = format.duration || 0
+      if (!trackDuration) {
+        trackDuration = await probeDuration(track.file)
+      }
       updated = {
         ...track,
         title: common.title || track.title,
         artist: common.artist || track.artist,
-        album: common.album || '',
         cover,
         coverBlob,
         coverMime,
-        duration: format.duration || 0,
+        duration: trackDuration,
       }
       setTracks((prev) =>
         prev.map((t) => {
@@ -182,6 +204,15 @@ export default function App() {
       )
     } catch {
       // Ignore files we can't read tags from; filename fallback is fine.
+    }
+    if (!updated.duration) {
+      const trackDuration = await probeDuration(track.file)
+      if (trackDuration) {
+        updated = { ...updated, duration: trackDuration }
+        setTracks((prev) =>
+          prev.map((t) => (t.id === track.id ? updated : t)),
+        )
+      }
     }
     await persistTrack(updated)
   }, [registerUrl, revokeUrl, persistTrack])
@@ -199,7 +230,6 @@ export default function App() {
       url: registerUrl(URL.createObjectURL(file)),
       title: prettyName(file.name),
       artist: 'Unknown artist',
-      album: '',
       cover: null,
       coverBlob: null,
       coverMime: null,
@@ -373,8 +403,7 @@ export default function App() {
     return viewList.filter(
       ({ track }) =>
         track.title.toLowerCase().includes(q) ||
-        track.artist.toLowerCase().includes(q) ||
-        track.album.toLowerCase().includes(q),
+        track.artist.toLowerCase().includes(q),
     )
   }, [viewList, search, view, selectedPlaylistId])
 
@@ -481,7 +510,6 @@ export default function App() {
             url,
             title: record.title,
             artist: record.artist,
-            album: record.album,
             cover,
             coverBlob: record.coverBlob ?? null,
             coverMime: record.coverMime ?? null,
@@ -502,6 +530,33 @@ export default function App() {
       cancelled = true
     }
   }, [registerUrl])
+
+  // Backfill missing durations for tracks imported before duration parsing was enabled.
+  useEffect(() => {
+    if (!libraryReady) return
+    const missing = tracks.filter(
+      (t) => !t.duration && !probedDurationRef.current.has(t.id),
+    )
+    if (missing.length === 0) return
+
+    let cancelled = false
+    missing.forEach((t) => probedDurationRef.current.add(t.id))
+
+    ;(async () => {
+      await mapWithConcurrency(missing, 3, async (track) => {
+        if (cancelled) return
+        const duration = await probeDuration(track.file)
+        if (!duration || cancelled) return
+        const updated = { ...track, duration }
+        setTracks((prev) => prev.map((t) => (t.id === track.id ? updated : t)))
+        await persistTrack(updated)
+      })
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [libraryReady, tracks, persistTrack])
 
   // Sync the <audio> element with the current track + playing state.
   useEffect(() => {
@@ -529,7 +584,6 @@ export default function App() {
     navigator.mediaSession.metadata = new window.MediaMetadata({
       title: currentTrack.title,
       artist: currentTrack.artist,
-      album: currentTrack.album,
       artwork: currentTrack.cover ? [{ src: currentTrack.cover }] : [],
     })
 
@@ -835,7 +889,6 @@ export default function App() {
             <div className="playlist-head">
               <span className="col-num">#</span>
               <span className="col-title">Title</span>
-              <span className="col-album">Album</span>
               <span className="col-dur">Time</span>
               <span className="col-actions" aria-hidden="true" />
             </div>
@@ -1075,7 +1128,6 @@ const TrackRow = memo(function TrackRow({
           <div className="t-artist" title={track.artist}>{track.artist}</div>
         </div>
       </div>
-      <div className="col-album" title={track.album}>{track.album || '—'}</div>
       <div className="col-dur">{track.duration ? formatTime(track.duration) : '—'}</div>
       <div className="col-actions track-actions">
         <button
