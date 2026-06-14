@@ -48,3 +48,15 @@ export const IconHeart = () => (
 export const IconHeartFilled = () => (
   <svg viewBox="0 0 24 24" style={s}><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z" /></svg>
 )
+export const IconPlaylist = () => (
+  <svg viewBox="0 0 24 24" style={s}><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" /></svg>
+)
+export const IconPlaylistAdd = () => (
+  <svg viewBox="0 0 24 24" style={s}><path d="M14 10H3v2h11v-2zm0-4H3v2h11V6zM3 16h7v-2H3v2zm10.5 2.5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-9.5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm4.5 4.5V11h-1.5v1.5H17v1.5h1.5V15H20v-1.5h1.5V12H20z" /></svg>
+)
+export const IconPlus = () => (
+  <svg viewBox="0 0 24 24" style={s}><path d="M19 13h-6v6h-2v-6H5v-2h6V5h2v6h6v2z" /></svg>
+)
+export const IconBack = () => (
+  <svg viewBox="0 0 24 24" style={s}><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></svg>
+)

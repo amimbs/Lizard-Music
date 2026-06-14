@@ -1,6 +1,7 @@
 const DB_NAME = 'local-music-library'
-const DB_VERSION = 1
-const STORE = 'tracks'
+const DB_VERSION = 2
+const TRACKS_STORE = 'tracks'
+const PLAYLISTS_STORE = 'playlists'
 
 let dbPromise = null
 
@@ -10,8 +11,11 @@ function openDb() {
       const request = indexedDB.open(DB_NAME, DB_VERSION)
       request.onupgradeneeded = () => {
         const db = request.result
-        if (!db.objectStoreNames.contains(STORE)) {
-          db.createObjectStore(STORE, { keyPath: 'id' })
+        if (!db.objectStoreNames.contains(TRACKS_STORE)) {
+          db.createObjectStore(TRACKS_STORE, { keyPath: 'id' })
+        }
+        if (!db.objectStoreNames.contains(PLAYLISTS_STORE)) {
+          db.createObjectStore(PLAYLISTS_STORE, { keyPath: 'id' })
         }
       }
       request.onsuccess = () => resolve(request.result)
@@ -21,12 +25,12 @@ function openDb() {
   return dbPromise
 }
 
-function withStore(mode, fn) {
+function withStore(storeName, mode, fn) {
   return openDb().then(
     (db) =>
       new Promise((resolve, reject) => {
-        const tx = db.transaction(STORE, mode)
-        const store = tx.objectStore(STORE)
+        const tx = db.transaction(storeName, mode)
+        const store = tx.objectStore(storeName)
         const result = fn(store)
         tx.oncomplete = () => resolve(result)
         tx.onerror = () => reject(tx.error)
@@ -44,7 +48,7 @@ export function isQuotaError(err) {
 }
 
 export async function getAllTracks() {
-  return withStore('readonly', (store) => {
+  return withStore(TRACKS_STORE, 'readonly', (store) => {
     return new Promise((resolve, reject) => {
       const request = store.getAll()
       request.onsuccess = () => {
@@ -58,13 +62,39 @@ export async function getAllTracks() {
 }
 
 export async function putTrack(record) {
-  return withStore('readwrite', (store) => {
+  return withStore(TRACKS_STORE, 'readwrite', (store) => {
     store.put(record)
   })
 }
 
 export async function deleteTrack(id) {
-  return withStore('readwrite', (store) => {
+  return withStore(TRACKS_STORE, 'readwrite', (store) => {
+    store.delete(id)
+  })
+}
+
+export async function getAllPlaylists() {
+  return withStore(PLAYLISTS_STORE, 'readonly', (store) => {
+    return new Promise((resolve, reject) => {
+      const request = store.getAll()
+      request.onsuccess = () => {
+        const records = request.result ?? []
+        records.sort((a, b) => a.name.localeCompare(b.name))
+        resolve(records)
+      }
+      request.onerror = () => reject(request.error)
+    })
+  })
+}
+
+export async function putPlaylist(playlist) {
+  return withStore(PLAYLISTS_STORE, 'readwrite', (store) => {
+    store.put(playlist)
+  })
+}
+
+export async function deletePlaylist(id) {
+  return withStore(PLAYLISTS_STORE, 'readwrite', (store) => {
     store.delete(id)
   })
 }
