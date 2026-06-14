@@ -194,7 +194,7 @@
 .playlist-head,
 .track {
   display: grid;
-  grid-template-columns: 48px 1fr 28% 56px 44px;
+  grid-template-columns: 48px 1fr 28% 56px 76px;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
@@ -225,6 +225,14 @@
   place-items: center;
 }
 
+.track-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 2px;
+}
+
+.favorite-btn,
 .remove-btn {
   display: grid;
   place-items: center;
@@ -237,16 +245,27 @@
   opacity: 0;
   transition: opacity 0.15s ease, color 0.15s ease, background 0.15s ease;
 }
+.track:hover .favorite-btn,
 .track:hover .remove-btn,
+.track:focus-within .favorite-btn,
 .track:focus-within .remove-btn {
   opacity: 1;
+}
+.favorite-btn:hover {
+  color: var(--accent);
+  background: rgba(139, 92, 246, 0.12);
+}
+.favorite-btn.active {
+  opacity: 1;
+  color: var(--accent);
+}
+.favorite-btn:active,
+.remove-btn:active {
+  transform: scale(0.95);
 }
 .remove-btn:hover {
   color: #f87171;
   background: rgba(248, 113, 113, 0.12);
-}
-.remove-btn:active {
-  transform: scale(0.95);
 }
 
 .storage-banner {
@@ -563,6 +582,27 @@
   color: var(--text-dim);
 }
 
+.np-favorite {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  color: var(--text-dim);
+  transition: color 0.15s ease, background 0.15s ease;
+}
+.np-favorite:hover {
+  color: var(--accent);
+  background: rgba(139, 92, 246, 0.12);
+}
+.np-favorite.active {
+  color: var(--accent);
+}
+.np-favorite:active {
+  transform: scale(0.95);
+}
+
 .controls {
   display: flex;
   flex-direction: column;
@@ -688,12 +728,20 @@ input[type='range']::-moz-range-thumb {
   .track .play-hover {
     display: block;
   }
+  .favorite-btn,
   .remove-btn {
     opacity: 1;
     width: 44px;
     height: 44px;
     min-width: 44px;
     min-height: 44px;
+  }
+  .favorite-btn.active {
+    opacity: 1;
+  }
+  .np-favorite {
+    width: 44px;
+    height: 44px;
   }
 }
 
@@ -797,7 +845,7 @@ input[type='range']::-moz-range-thumb {
   }
   .playlist-head,
   .track {
-    grid-template-columns: 44px 1fr 52px 44px;
+    grid-template-columns: 44px 1fr 52px 76px;
     gap: 8px;
     padding: 0 10px;
   }

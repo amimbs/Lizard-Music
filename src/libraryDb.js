@@ -96,5 +96,6 @@ export function trackToRecord(track) {
     coverBlob: track.coverBlob ?? null,
     coverMime: track.coverMime ?? null,
     addedAt: track.addedAt ?? Date.now(),
+    favorite: track.favorite ?? false,
   }
 }

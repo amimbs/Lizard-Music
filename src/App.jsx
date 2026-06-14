@@ -17,6 +17,8 @@ import {
   IconFile,
   IconSearch,
   IconTrash,
+  IconHeart,
+  IconHeartFilled,
 } from './icons.jsx'
 import {
   getAllTracks,
@@ -51,6 +53,18 @@ function prettyName(filename) {
   return filename.replace(/\.[^/.]+$/, '').replace(/_/g, ' ')
 }
 
+function sortByTitle(a, b) {
+  const titleCmp = a.track.title.toLowerCase().localeCompare(b.track.title.toLowerCase())
+  if (titleCmp !== 0) return titleCmp
+  return a.track.artist.toLowerCase().localeCompare(b.track.artist.toLowerCase())
+}
+
+const VIEW_TITLES = {
+  songs: 'Songs',
+  recent: 'Recently Added',
+  favorites: 'Favorites',
+}
+
 async function mapWithConcurrency(items, limit, fn) {
   let index = 0
   const workers = Array.from({ length: Math.min(limit, items.length) }, async () => {
@@ -73,7 +87,7 @@ export default function App() {
   const [shuffle, setShuffle] = useState(false)
   const [repeat, setRepeat] = useState('off') // off | all | one
   const [search, setSearch] = useState('')
-  const [view, setView] = useState('songs') // songs | recent
+  const [view, setView] = useState('songs') // songs | recent | favorites
   const [loading, setLoading] = useState(false)
   const [libraryReady, setLibraryReady] = useState(false)
   const [storageError, setStorageError] = useState('')
@@ -166,6 +180,7 @@ export default function App() {
       coverMime: null,
       duration: 0,
       addedAt: Date.now() + i,
+      favorite: false,
     }))
 
     setTracks((prev) => {
@@ -209,24 +224,31 @@ export default function App() {
     }
   }, [tracks, currentIndex, revokeUrl])
 
+  const toggleFavorite = useCallback(async (id) => {
+    const track = tracks.find((t) => t.id === id)
+    if (!track) return
+    const updated = { ...track, favorite: !track.favorite }
+    setTracks((prev) => prev.map((t) => (t.id === id ? updated : t)))
+    try {
+      await putTrack(trackToRecord(updated))
+    } catch {
+      // In-memory state already updated.
+    }
+  }, [tracks])
+
   const togglePlay = useCallback(() => {
     if (!currentTrack) return
     setIsPlaying((p) => !p)
   }, [currentTrack])
 
   const viewList = useMemo(() => {
-    if (view === 'songs') {
-      return tracks
-        .map((t, i) => ({ track: t, index: i }))
-        .sort((a, b) => {
-          const titleCmp = a.track.title.toLowerCase().localeCompare(b.track.title.toLowerCase())
-          if (titleCmp !== 0) return titleCmp
-          return a.track.artist.toLowerCase().localeCompare(b.track.artist.toLowerCase())
-        })
+    const indexed = tracks.map((t, i) => ({ track: t, index: i }))
+    if (view === 'songs' || view === 'favorites') {
+      const list = view === 'favorites' ? indexed.filter(({ track }) => track.favorite) : indexed
+      return list.sort(sortByTitle)
     }
     const cutoff = Date.now() - RECENT_MS
-    return tracks
-      .map((t, i) => ({ track: t, index: i }))
+    return indexed
       .filter(({ track }) => track.addedAt >= cutoff)
       .sort((a, b) => b.track.addedAt - a.track.addedAt)
   }, [tracks, view])
@@ -351,6 +373,7 @@ export default function App() {
             coverMime: record.coverMime ?? null,
             duration: record.duration,
             addedAt: record.addedAt,
+            favorite: record.favorite ?? false,
           }
         })
         setTracks(restored)
@@ -488,6 +511,7 @@ export default function App() {
 
   const hasTracks = tracks.length > 0
   const recentEmpty = view === 'recent' && viewList.length === 0 && !search.trim()
+  const favoritesEmpty = view === 'favorites' && viewList.length === 0 && !search.trim()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
 
   return (
@@ -513,6 +537,14 @@ export default function App() {
             aria-current={view === 'recent' ? 'page' : undefined}
           >
             Recently Added
+          </button>
+          <button
+            type="button"
+            className={view === 'favorites' ? 'active' : ''}
+            onClick={() => setView('favorites')}
+            aria-current={view === 'favorites' ? 'page' : undefined}
+          >
+            Favorites
           </button>
         </nav>
         <div className="search">
@@ -619,10 +651,16 @@ export default function App() {
             <h2>Nothing added in the last 7 days</h2>
             <p>Songs you add will show up here for a week. Browse all music on the Songs page.</p>
           </div>
+        ) : favoritesEmpty ? (
+          <div className="view-empty">
+            <div className="view-empty-icon"><IconHeart /></div>
+            <h2>No favorites yet</h2>
+            <p>Tap the heart on any song to save it here.</p>
+          </div>
         ) : (
           <div className="playlist">
             <div className="page-title">
-              <h1>{view === 'songs' ? 'Songs' : 'Recently Added'}</h1>
+              <h1>{VIEW_TITLES[view]}</h1>
               <span className="page-count">
                 {displayed.length} {displayed.length === 1 ? 'song' : 'songs'}
               </span>
@@ -657,7 +695,9 @@ export default function App() {
                         displayIndex={virtualRow.index}
                         isCurrent={index === currentIndex}
                         isPlaying={isPlaying && index === currentIndex}
+                        isFavorite={track.favorite}
                         onPlay={() => (index === currentIndex ? togglePlay() : playIndex(index))}
+                        onToggleFavorite={() => toggleFavorite(track.id)}
                         onRemove={() => removeTrack(track.id)}
                       />
                     </div>
@@ -684,6 +724,14 @@ export default function App() {
                 <div className="np-title" title={currentTrack.title}>{currentTrack.title}</div>
                 <div className="np-artist" title={currentTrack.artist}>{currentTrack.artist}</div>
               </div>
+              <button
+                type="button"
+                className={`np-favorite ${currentTrack.favorite ? 'active' : ''}`}
+                onClick={() => toggleFavorite(currentTrack.id)}
+                aria-label={currentTrack.favorite ? 'Remove from favorites' : 'Add to favorites'}
+              >
+                {currentTrack.favorite ? <IconHeartFilled /> : <IconHeart />}
+              </button>
             </>
           ) : (
             <div className="np-meta">
@@ -767,10 +815,24 @@ export default function App() {
   )
 }
 
-const TrackRow = memo(function TrackRow({ track, displayIndex, isCurrent, isPlaying, onPlay, onRemove }) {
+const TrackRow = memo(function TrackRow({
+  track,
+  displayIndex,
+  isCurrent,
+  isPlaying,
+  isFavorite,
+  onPlay,
+  onToggleFavorite,
+  onRemove,
+}) {
   const handleRowClick = (e) => {
     if (e.target.closest('button')) return
     onPlay()
+  }
+
+  const handleToggleFavorite = (e) => {
+    e.stopPropagation()
+    onToggleFavorite()
   }
 
   const handleRemove = (e) => {
@@ -812,14 +874,24 @@ const TrackRow = memo(function TrackRow({ track, displayIndex, isCurrent, isPlay
       </div>
       <div className="col-album" title={track.album}>{track.album || '—'}</div>
       <div className="col-dur">{track.duration ? formatTime(track.duration) : '—'}</div>
-      <button
-        type="button"
-        className="col-actions remove-btn"
-        onClick={handleRemove}
-        aria-label="Remove from library"
-      >
-        <IconTrash />
-      </button>
+      <div className="col-actions track-actions">
+        <button
+          type="button"
+          className={`favorite-btn ${isFavorite ? 'active' : ''}`}
+          onClick={handleToggleFavorite}
+          aria-label={isFavorite ? 'Remove from favorites' : 'Add to favorites'}
+        >
+          {isFavorite ? <IconHeartFilled /> : <IconHeart />}
+        </button>
+        <button
+          type="button"
+          className="remove-btn"
+          onClick={handleRemove}
+          aria-label="Remove from library"
+        >
+          <IconTrash />
+        </button>
+      </div>
     </div>
   )
 })
