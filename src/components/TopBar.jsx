@@ -1,4 +1,4 @@
-import { IconMusic, IconSearch } from '../icons.jsx'
+import { IconSearch } from '../icons.jsx'
 import { NavAddMenu } from './NavAddMenu.jsx'
 import { switchView, getSearchPlaceholder } from '../utils/view.js'
 
@@ -34,7 +34,15 @@ export function TopBar({
   return (
     <header className="topbar">
       <div className="brand">
-        <span className="brand-icon"><IconMusic /></span>
+        <span className="brand-icon">
+          <img
+            className="brand-logo"
+            src={`${import.meta.env.BASE_URL}lizard-logo-dark.png`}
+            alt=""
+            width={32}
+            height={32}
+          />
+        </span>
         <span className="brand-name">Lizard Music</span>
       </div>
       <nav className="nav" aria-label="Library">
