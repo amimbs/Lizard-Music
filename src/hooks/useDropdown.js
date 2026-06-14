@@ -42,20 +42,29 @@ export function useDropdownDismiss(open, setOpen, triggerRef, menuRef) {
   useEffect(() => {
     if (!open) return
 
+    const isInsideMenu = (target) =>
+      triggerRef.current?.contains(target) || menuRef.current?.contains(target)
+
     const handlePointerDown = (e) => {
-      if (triggerRef.current?.contains(e.target) || menuRef.current?.contains(e.target)) return
+      if (isInsideMenu(e.target)) return
       setOpen(false)
     }
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') setOpen(false)
     }
+    const handleScroll = (e) => {
+      if (menuRef.current?.contains(e.target)) return
+      setOpen(false)
+    }
 
-    document.addEventListener('mousedown', handlePointerDown)
+    document.addEventListener('pointerdown', handlePointerDown)
     document.addEventListener('keydown', handleKeyDown)
+    document.addEventListener('scroll', handleScroll, true)
 
     return () => {
-      document.removeEventListener('mousedown', handlePointerDown)
+      document.removeEventListener('pointerdown', handlePointerDown)
       document.removeEventListener('keydown', handleKeyDown)
+      document.removeEventListener('scroll', handleScroll, true)
     }
   }, [open, setOpen, triggerRef, menuRef])
 }

@@ -1,4 +1,4 @@
-# Local Music Player
+# Lizard Music
 
 A clean, fully-local music player built with React + Vite. Pick songs or whole
 folders from your device and play them — nothing ever leaves your machine.

@@ -6,7 +6,7 @@ export function InstallBanner({ showBanner, showManualHint, onInstall, onDismiss
       <div className="install-banner-text">
         {showBanner ? (
           <>
-            <strong>Install Local Music</strong>
+            <strong>Install Lizard Music</strong>
             <span>Add to your home screen for quick access.</span>
           </>
         ) : (

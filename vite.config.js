@@ -16,8 +16,8 @@ export default defineConfig({
       includeAssets: ['note.svg', 'icon-192.png', 'icon-512.png', 'icon-maskable-512.png'],
       manifest: {
         id: '/Lizard-Music/',
-        name: 'Local Music Player',
-        short_name: 'Local Music',
+        name: 'Lizard Music',
+        short_name: 'Lizard Music',
         description: 'A fully-local music player — nothing leaves your device.',
         theme_color: '#0d0d14',
         background_color: '#0d0d14',

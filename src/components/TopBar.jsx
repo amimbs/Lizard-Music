@@ -35,7 +35,7 @@ export function TopBar({
     <header className="topbar">
       <div className="brand">
         <span className="brand-icon"><IconMusic /></span>
-        <span className="brand-name">Local Music</span>
+        <span className="brand-name">Lizard Music</span>
       </div>
       <nav className="nav" aria-label="Library">
         <div className="nav-views" role="group" aria-label="Library views">
