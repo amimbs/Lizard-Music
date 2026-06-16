@@ -13,6 +13,7 @@ import { TopBar } from './components/TopBar.jsx'
 import { LibraryContent } from './components/LibraryContent.jsx'
 import { PlayerFooter } from './components/PlayerFooter.jsx'
 import { AppBanner } from './components/AppBanner.jsx'
+import { UpdateOverlay } from './components/UpdateOverlay.jsx'
 import { getActiveBanner } from './utils/banners.js'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
@@ -102,12 +103,12 @@ export default function App() {
 
   const { estimateRowSize } = useRowHeight()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
-  const { showBanner: showUpdateBanner, applyUpdate, dismiss: dismissUpdate } = usePwaUpdate()
+  const { showBanner: showUpdateBanner, applyUpdate, dismiss: dismissUpdate, isUpdating } = usePwaUpdate()
 
   const activeBanner = getActiveBanner({
     storageError,
     onDismissStorage: () => setStorageError(''),
-    showUpdateBanner,
+    showUpdateBanner: showUpdateBanner && !isUpdating,
     onUpdate: applyUpdate,
     onDismissUpdate: dismissUpdate,
     showInstallBanner: showBanner,
@@ -381,6 +382,8 @@ export default function App() {
           onCancel={() => setClearLibraryStep(null)}
         />
       )}
+
+      {isUpdating && <UpdateOverlay />}
     </div>
   )
 }

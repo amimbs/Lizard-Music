@@ -9,6 +9,7 @@ const UPDATE_CHECK_MS = 60 * 60 * 1000
  */
 export function usePwaUpdate() {
   const [needRefresh, setNeedRefresh] = useState(false)
+  const [isUpdating, setIsUpdating] = useState(false)
   const [dismissed, setDismissed] = useState(() => {
     try {
       return sessionStorage.getItem(DISMISS_KEY) === '1'
@@ -46,6 +47,7 @@ export function usePwaUpdate() {
   }, [])
 
   const applyUpdate = useCallback(() => {
+    setIsUpdating(true)
     updateFnRef.current?.(true)
   }, [])
 
@@ -60,5 +62,5 @@ export function usePwaUpdate() {
 
   const showBanner = needRefresh && !dismissed
 
-  return { showBanner, applyUpdate, dismiss }
+  return { showBanner, applyUpdate, dismiss, isUpdating }
 }

@@ -47,8 +47,11 @@ describe('usePwaUpdate', () => {
 
     const { result } = renderHook(() => usePwaUpdate())
 
+    expect(result.current.isUpdating).toBe(false)
+
     act(() => result.current.applyUpdate())
 
+    expect(result.current.isUpdating).toBe(true)
     expect(applyUpdate).toHaveBeenCalledWith(true)
   })
 

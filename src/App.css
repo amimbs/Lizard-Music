@@ -753,6 +753,51 @@
   50% { opacity: 1; transform: scale(1); }
 }
 
+.update-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: grid;
+  place-items: center;
+  background:
+    radial-gradient(1200px 600px at 80% -10%, rgba(139, 92, 246, 0.18), transparent 60%),
+    radial-gradient(900px 500px at -10% 10%, rgba(192, 132, 252, 0.1), transparent 60%),
+    var(--bg);
+}
+.update-overlay-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  color: var(--text-dim);
+}
+.update-overlay-icon {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: rgba(139, 92, 246, 0.12);
+  animation: pulse 1.6s ease-in-out infinite;
+}
+.update-overlay-logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.update-overlay-title {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+.update-overlay-subtitle {
+  margin: 0;
+  font-size: 14px;
+}
+
 .track {
   height: 60px;
   border-radius: 10px;
