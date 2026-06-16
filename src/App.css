@@ -1,6 +1,6 @@
 .app {
   display: grid;
-  grid-template-rows: auto 1fr auto;
+  grid-template-rows: auto auto 1fr auto;
   width: 100%;
   min-width: 0;
   height: 100%;
@@ -630,72 +630,63 @@
   transform: scale(0.95);
 }
 
-.storage-banner {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 10px 22px;
-  font-size: 13px;
-  color: #fecaca;
-  background: rgba(127, 29, 29, 0.35);
-  border-bottom: 1px solid rgba(248, 113, 113, 0.25);
-}
-.storage-banner button {
-  display: grid;
-  place-items: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 6px;
-  font-size: 18px;
-  line-height: 1;
-  color: inherit;
-  opacity: 0.8;
-}
-.storage-banner button:hover {
-  opacity: 1;
-  background: rgba(255, 255, 255, 0.08);
+.app-banners:empty {
+  display: none;
 }
 
-.install-banner {
+.app-banners {
+  width: 100%;
+  min-height: 0;
+}
+
+.app-banner {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
   padding: 12px 22px;
   font-size: 13px;
+  border-bottom: 1px solid transparent;
+}
+.app-banner--error {
+  padding: 10px 22px;
+  color: #fecaca;
+  background: rgba(127, 29, 29, 0.35);
+  border-bottom-color: rgba(248, 113, 113, 0.25);
+}
+.app-banner--promo {
   color: var(--text);
   background: rgba(139, 92, 246, 0.14);
-  border-bottom: 1px solid rgba(139, 92, 246, 0.25);
+  border-bottom-color: rgba(139, 92, 246, 0.25);
 }
-.install-banner-text {
+.app-banner-text {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
-.install-banner-text strong {
+.app-banner-text strong {
   font-size: 14px;
 }
-.install-banner-text span {
+.app-banner--promo .app-banner-text span {
   color: var(--text-dim);
 }
 .install-menu {
   display: inline-block;
   font-weight: 700;
 }
-.install-banner-actions {
+.app-banner-actions {
   display: flex;
   align-items: center;
   gap: 8px;
   flex-shrink: 0;
 }
-.install-btn {
+.app-banner-action {
   padding: 8px 16px;
   min-height: 36px;
   font-size: 13px;
 }
-.install-dismiss {
+.app-banner-dismiss {
   display: grid;
   place-items: center;
   width: 32px;
@@ -703,11 +694,19 @@
   border-radius: 8px;
   font-size: 20px;
   line-height: 1;
-  color: var(--text-dim);
+  color: inherit;
+  opacity: 0.8;
 }
-.install-dismiss:hover {
-  color: var(--text);
+.app-banner--promo .app-banner-dismiss {
+  color: var(--text-dim);
+  opacity: 1;
+}
+.app-banner-dismiss:hover {
+  opacity: 1;
   background: rgba(255, 255, 255, 0.08);
+}
+.app-banner--promo .app-banner-dismiss:hover {
+  color: var(--text);
 }
 
 .restoring {
@@ -1177,19 +1176,37 @@ input[type='range']::-moz-range-thumb {
     padding: 10px 12px;
     min-height: 44px;
   }
-  .install-banner {
-    flex-direction: column;
-    align-items: stretch;
-    padding: 12px 14px;
-    gap: 10px;
+  .app-banner {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    padding: 10px 14px;
+    gap: 8px;
   }
-  .install-banner-actions {
+  .app-banner--error {
+    flex-wrap: nowrap;
+    align-items: center;
+    padding: 10px 14px;
+  }
+  .app-banner--error .app-banner-text {
+    flex: 1 1 auto;
+  }
+  .app-banner--promo .app-banner-text {
+    flex: 1 1 100%;
+  }
+  .app-banner-actions {
+    flex: 1 1 auto;
     justify-content: space-between;
+    gap: 8px;
   }
-  .install-btn {
+  .app-banner--promo .app-banner-actions {
+    flex: 1 1 100%;
+  }
+  .app-banner-action {
     flex: 1;
     justify-content: center;
-    min-height: 44px;
+    min-height: 40px;
+    padding: 8px 12px;
   }
   .content {
     padding: 4px 6px 8px;

@@ -11,8 +11,8 @@ import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js'
 import { TopBar } from './components/TopBar.jsx'
 import { LibraryContent } from './components/LibraryContent.jsx'
 import { PlayerFooter } from './components/PlayerFooter.jsx'
-import { StorageBanner } from './components/StorageBanner.jsx'
-import { InstallBanner } from './components/InstallBanner.jsx'
+import { AppBanner } from './components/AppBanner.jsx'
+import { getActiveBanner } from './utils/banners.js'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
 import {
@@ -101,6 +101,15 @@ export default function App() {
 
   const { estimateRowSize } = useRowHeight()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
+
+  const activeBanner = getActiveBanner({
+    storageError,
+    onDismissStorage: () => setStorageError(''),
+    showInstallBanner: showBanner,
+    showManualHint,
+    onInstall: install,
+    onDismissInstall: dismiss,
+  })
 
   const addToPlaylistTrack = useMemo(
     () => (addToPlaylistTrackId ? tracks.find((t) => t.id === addToPlaylistTrackId) ?? null : null),
@@ -242,14 +251,9 @@ export default function App() {
         hasLibraryContent={hasLibraryContent}
       />
 
-      <StorageBanner message={storageError} onDismiss={() => setStorageError('')} />
-
-      <InstallBanner
-        showBanner={showBanner}
-        showManualHint={showManualHint}
-        onInstall={install}
-        onDismiss={dismiss}
-      />
+      <div className="app-banners">
+        {activeBanner && <AppBanner {...activeBanner} />}
+      </div>
 
       <LibraryContent
         libraryReady={libraryReady}
