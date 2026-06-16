@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useMemo } from 'react'
+import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import './App.css'
 import { useInstallPrompt } from './useInstallPrompt.js'
 import { useObjectUrls } from './hooks/useObjectUrls.js'
@@ -22,10 +22,12 @@ import {
   getClearLibraryConfirmCopy,
 } from './utils/deleteConfirm.js'
 import { switchView } from './utils/view.js'
+import { firstSongIndex } from './utils/tracks.js'
 
 export default function App() {
   const fileInputRef = useRef(null)
   const folderInputRef = useRef(null)
+  const initialQueueDoneRef = useRef(false)
 
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState(null)
@@ -107,12 +109,24 @@ export default function App() {
 
   const handleAddFiles = useCallback(
     async (fileList) => {
-      const wasEmpty = tracks.length === 0
-      if (wasEmpty) setCurrentIndex(0)
       await addFiles(fileList)
     },
-    [tracks.length, addFiles, setCurrentIndex],
+    [addFiles],
   )
+
+  useEffect(() => {
+    if (tracks.length === 0) {
+      initialQueueDoneRef.current = false
+      return
+    }
+    if (!libraryReady || initialQueueDoneRef.current || currentIndex >= 0) return
+
+    const index = firstSongIndex(tracks)
+    if (index >= 0) {
+      setCurrentIndex(index)
+      initialQueueDoneRef.current = true
+    }
+  }, [libraryReady, tracks, currentIndex, setCurrentIndex])
 
   const handleRemoveTrack = useCallback(
     (id) => {

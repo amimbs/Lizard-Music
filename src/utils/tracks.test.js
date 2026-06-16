@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { sortByTitle, buildShuffleOrder } from './tracks.js'
+import { sortByTitle, buildShuffleOrder, firstSongIndex } from './tracks.js'
 
 function entry(title, artist, index = 0) {
   return { track: { title, artist }, index }
@@ -15,6 +15,22 @@ describe('sortByTitle', () => {
 
     const sorted = [...items].sort(sortByTitle)
     expect(sorted.map((i) => i.index)).toEqual([1, 0, 2])
+  })
+})
+
+describe('firstSongIndex', () => {
+  it('returns the tracks-array index of the alphabetically first song', () => {
+    const tracks = [
+      { title: 'Zulu', artist: 'A' },
+      { title: 'Alpha', artist: 'B' },
+      { title: 'Alpha', artist: 'A' },
+    ]
+
+    expect(firstSongIndex(tracks)).toBe(2)
+  })
+
+  it('returns -1 for an empty library', () => {
+    expect(firstSongIndex([])).toBe(-1)
   })
 })
 

@@ -4,6 +4,13 @@ export function sortByTitle(a, b) {
   return a.track.artist.toLowerCase().localeCompare(b.track.artist.toLowerCase())
 }
 
+export function firstSongIndex(tracks) {
+  if (tracks.length === 0) return -1
+  return tracks
+    .map((track, index) => ({ track, index }))
+    .sort(sortByTitle)[0].index
+}
+
 export function buildShuffleOrder(order, exclude) {
   const shuffled = order.filter((i) => i !== exclude)
   for (let i = shuffled.length - 1; i > 0; i--) {
