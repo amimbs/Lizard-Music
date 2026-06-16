@@ -21,6 +21,8 @@ export function TopBar({
   onAddFiles,
   onDeleteLibrary,
   hasLibraryContent,
+  theme,
+  onThemeChange,
 }) {
   const handleViewChange = (nextView) => {
     switchView(setView, setSelectedPlaylistId, setSearch, nextView)
@@ -31,13 +33,18 @@ export function TopBar({
     e.target.value = ''
   }
 
+  const logoSrc =
+    theme === 'light'
+      ? `${import.meta.env.BASE_URL}lizard-logo-light.png`
+      : `${import.meta.env.BASE_URL}lizard-logo-dark.png`
+
   return (
     <header className="topbar">
       <div className="brand">
         <span className="brand-icon">
           <img
             className="brand-logo"
-            src={`${import.meta.env.BASE_URL}lizard-logo-dark.png`}
+            src={logoSrc}
             alt=""
             width={32}
             height={32}
@@ -66,6 +73,8 @@ export function TopBar({
             onAddFolder={() => folderInputRef.current?.click()}
             onDeleteLibrary={onDeleteLibrary}
             hasLibraryContent={hasLibraryContent}
+            theme={theme}
+            onThemeChange={onThemeChange}
           />
         </div>
       </nav>

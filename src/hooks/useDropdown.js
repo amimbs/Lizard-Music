@@ -38,12 +38,14 @@ export function useFixedDropdown(open, triggerRef, menuRef, menuWidth) {
   return position
 }
 
-export function useDropdownDismiss(open, setOpen, triggerRef, menuRef) {
+export function useDropdownDismiss(open, setOpen, triggerRef, menuRef, extraRefs = []) {
   useEffect(() => {
     if (!open) return
 
     const isInsideMenu = (target) =>
-      triggerRef.current?.contains(target) || menuRef.current?.contains(target)
+      triggerRef.current?.contains(target) ||
+      menuRef.current?.contains(target) ||
+      extraRefs.some((ref) => ref.current?.contains(target))
 
     const handlePointerDown = (e) => {
       if (isInsideMenu(e.target)) return
@@ -66,5 +68,46 @@ export function useDropdownDismiss(open, setOpen, triggerRef, menuRef) {
       document.removeEventListener('keydown', handleKeyDown)
       document.removeEventListener('scroll', handleScroll, true)
     }
-  }, [open, setOpen, triggerRef, menuRef])
+  }, [open, setOpen, triggerRef, menuRef, extraRefs])
+}
+
+export function useSubmenuFlyout(open, anchorRef, submenuRef, submenuWidth) {
+  const [position, setPosition] = useState({ top: 0, left: 0 })
+
+  useLayoutEffect(() => {
+    if (!open) return
+
+    const updatePosition = () => {
+      const anchor = anchorRef.current
+      if (!anchor) return
+
+      const rect = anchor.getBoundingClientRect()
+      const submenuHeight = submenuRef.current?.offsetHeight ?? 120
+      const gap = 4
+      let left = rect.right + gap
+      if (left + submenuWidth > window.innerWidth - 8) {
+        left = Math.max(8, rect.left - submenuWidth - gap)
+      }
+
+      let top = rect.top
+      if (top + submenuHeight > window.innerHeight - 8) {
+        top = Math.max(8, window.innerHeight - submenuHeight - 8)
+      }
+
+      setPosition({ top, left })
+    }
+
+    updatePosition()
+    const frame = requestAnimationFrame(updatePosition)
+    window.addEventListener('resize', updatePosition)
+    window.addEventListener('scroll', updatePosition, true)
+
+    return () => {
+      cancelAnimationFrame(frame)
+      window.removeEventListener('resize', updatePosition)
+      window.removeEventListener('scroll', updatePosition, true)
+    }
+  }, [open, submenuWidth, anchorRef, submenuRef])
+
+  return position
 }

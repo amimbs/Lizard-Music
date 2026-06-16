@@ -9,6 +9,7 @@ import { usePlayback } from './hooks/usePlayback.js'
 import { useRowHeight } from './hooks/useRowHeight.js'
 import { useMediaSession } from './hooks/useMediaSession.js'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js'
+import { useTheme } from './hooks/useTheme.js'
 import { TopBar } from './components/TopBar.jsx'
 import { LibraryContent } from './components/LibraryContent.jsx'
 import { PlayerFooter } from './components/PlayerFooter.jsx'
@@ -36,6 +37,8 @@ export default function App() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deletePlaylistConfirmId, setDeletePlaylistConfirmId] = useState(null)
   const [clearLibraryStep, setClearLibraryStep] = useState(null)
+
+  const { theme, setTheme } = useTheme()
 
   const { registerUrl, revokeUrl } = useObjectUrls()
 
@@ -255,6 +258,8 @@ export default function App() {
         onAddFiles={handleAddFiles}
         onDeleteLibrary={handleRequestClearLibrary}
         hasLibraryContent={hasLibraryContent}
+        theme={theme}
+        onThemeChange={setTheme}
       />
 
       <div className="app-banners">
