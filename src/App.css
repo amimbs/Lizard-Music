@@ -92,7 +92,7 @@
   color: var(--text);
 }
 .nav button.active {
-  color: #fff;
+  color: var(--on-accent);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: 0 4px 12px var(--accent-shadow);
 }
@@ -160,7 +160,7 @@
 .btn.primary {
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   border: none;
-  color: #fff;
+  color: var(--on-accent);
   box-shadow: 0 6px 16px var(--accent-shadow-strong);
 }
 .btn.primary:hover {
@@ -211,7 +211,7 @@
   color: var(--accent-2);
 }
 .menu-item.primary:hover {
-  color: #fff;
+  color: var(--on-accent);
   background: var(--accent-soft-hover);
 }
 .menu-item.danger {
@@ -269,6 +269,12 @@
 }
 .menu-submenu-flyout {
   z-index: 91;
+  max-height: min(70vh, 420px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 .menu-theme-option {
   justify-content: space-between;
@@ -955,7 +961,7 @@
   height: 96px;
   border-radius: 24px;
   font-size: 52px;
-  color: #fff;
+  color: var(--on-accent);
   background: linear-gradient(135deg, var(--accent), var(--accent-2));
   box-shadow: 0 14px 40px var(--accent-shadow-xl);
   margin-bottom: 6px;

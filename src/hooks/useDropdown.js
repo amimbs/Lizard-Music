@@ -56,6 +56,7 @@ export function useDropdownDismiss(open, setOpen, triggerRef, menuRef, extraRefs
     }
     const handleScroll = (e) => {
       if (menuRef.current?.contains(e.target)) return
+      if (extraRefs.some((ref) => ref.current?.contains(e.target))) return
       setOpen(false)
     }
 

@@ -48,4 +48,43 @@ describe('useDropdownDismiss', () => {
     fireEvent.scroll(screen.getByTestId('scroll-area'))
     expect(screen.queryByRole('menu')).not.toBeInTheDocument()
   })
+
+  it('stays open when scrolling inside an extra menu ref', async () => {
+    function TestDropdownWithSubmenu() {
+      const [open, setOpen] = useState(false)
+      const triggerRef = useRef(null)
+      const menuRef = useRef(null)
+      const submenuRef = useRef(null)
+      useDropdownDismiss(open, setOpen, triggerRef, menuRef, [submenuRef])
+
+      return (
+        <div>
+          <button ref={triggerRef} type="button" onClick={() => setOpen(true)}>
+            Open menu
+          </button>
+          {open && (
+            <>
+              <div ref={menuRef} role="menu">
+                Menu item
+              </div>
+              <div ref={submenuRef} role="menu" aria-label="Submenu" data-testid="submenu">
+                <div style={{ height: 400, overflow: 'auto' }} data-testid="submenu-scroll">
+                  Submenu content
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )
+    }
+
+    const user = userEvent.setup()
+    render(<TestDropdownWithSubmenu />)
+
+    await user.click(screen.getByRole('button', { name: 'Open menu' }))
+    expect(screen.getByLabelText('Submenu')).toBeInTheDocument()
+
+    fireEvent.scroll(screen.getByTestId('submenu-scroll'))
+    expect(screen.getByLabelText('Submenu')).toBeInTheDocument()
+  })
 })

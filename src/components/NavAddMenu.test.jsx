@@ -66,6 +66,8 @@ describe('NavAddMenu', () => {
     await user.click(screen.getByRole('menuitemradio', { name: 'Warm' }))
 
     expect(onThemeChange).toHaveBeenCalledWith('warm')
+    expect(screen.getByRole('menu', { name: 'Theme options' })).toBeInTheDocument()
+    expect(screen.getAllByRole('menu')).toHaveLength(2)
   })
 
   it('shows a checkmark on the active theme', async () => {

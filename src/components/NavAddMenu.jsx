@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { createPortal } from 'react-dom'
 import {
   IconCheck,
@@ -41,7 +41,12 @@ export function NavAddMenu({
     themeSubmenuRef,
     THEME_SUBMENU_WIDTH,
   )
-  useDropdownDismiss(open, setOpen, triggerRef, menuRef, [themeSubmenuRef])
+  const closeMenu = useCallback(() => {
+    setOpen(false)
+    setThemeSubOpen(false)
+  }, [])
+
+  useDropdownDismiss(open, closeMenu, triggerRef, menuRef, [themeSubmenuRef])
 
   const runAction = (action) => (e) => {
     e.stopPropagation()
@@ -58,7 +63,6 @@ export function NavAddMenu({
   const selectTheme = (themeId) => (e) => {
     e.stopPropagation()
     onThemeChange(themeId)
-    setThemeSubOpen(false)
   }
 
   const handleMenuToggle = () => {

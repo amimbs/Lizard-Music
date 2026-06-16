@@ -1,6 +1,7 @@
 import { IconSearch } from '../icons.jsx'
 import { NavAddMenu } from './NavAddMenu.jsx'
 import { switchView, getSearchPlaceholder } from '../utils/view.js'
+import { isLightTheme } from '../themes.js'
 
 const LIBRARY_VIEWS = [
   { id: 'songs', label: 'Songs' },
@@ -33,10 +34,9 @@ export function TopBar({
     e.target.value = ''
   }
 
-  const logoSrc =
-    theme === 'light'
-      ? `${import.meta.env.BASE_URL}lizard-logo-light.png`
-      : `${import.meta.env.BASE_URL}lizard-logo-dark.png`
+  const logoSrc = isLightTheme(theme)
+    ? `${import.meta.env.BASE_URL}lizard-logo-light.png`
+    : `${import.meta.env.BASE_URL}lizard-logo-dark.png`
 
   return (
     <header className="topbar">
