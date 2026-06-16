@@ -1,6 +1,7 @@
 import { useState, useRef, useCallback, useMemo, useEffect } from 'react'
 import './App.css'
 import { useInstallPrompt } from './useInstallPrompt.js'
+import { usePwaUpdate } from './usePwaUpdate.js'
 import { useObjectUrls } from './hooks/useObjectUrls.js'
 import { useMusicLibrary } from './hooks/useMusicLibrary.js'
 import { useTrackViews } from './hooks/useTrackViews.js'
@@ -101,10 +102,14 @@ export default function App() {
 
   const { estimateRowSize } = useRowHeight()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
+  const { showBanner: showUpdateBanner, applyUpdate, dismiss: dismissUpdate } = usePwaUpdate()
 
   const activeBanner = getActiveBanner({
     storageError,
     onDismissStorage: () => setStorageError(''),
+    showUpdateBanner,
+    onUpdate: applyUpdate,
+    onDismissUpdate: dismissUpdate,
     showInstallBanner: showBanner,
     showManualHint,
     onInstall: install,

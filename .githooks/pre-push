@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+# Git pre-push hook: bump app version when local matches remote.
+set -euo pipefail
+
+root="$(git rev-parse --show-toplevel)"
+cd "$root"
+
+if node scripts/bump-version.mjs; then
+  exit 0
+fi
+
+echo ""
+echo "App version was bumped. Commit package.json and package-lock.json, then push again."
+exit 1

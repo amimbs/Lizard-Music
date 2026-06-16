@@ -1,8 +1,13 @@
-/** Lower number = higher priority. Update slot reserved for a future PWA refresh banner. */
 export const BANNER_PRIORITY = {
   storage: 1,
   update: 2,
   install: 3,
+}
+
+const UPDATE_BANNER = {
+  variant: 'promo',
+  title: 'Update available',
+  message: 'A new version of Lizard Music is ready.',
 }
 
 const INSTALL_BANNER = {
@@ -23,6 +28,9 @@ const MANUAL_INSTALL_HINT = {
 export function getActiveBanner({
   storageError,
   onDismissStorage,
+  showUpdateBanner,
+  onUpdate,
+  onDismissUpdate,
   showInstallBanner,
   showManualHint,
   onInstall,
@@ -37,6 +45,17 @@ export function getActiveBanner({
         variant: 'error',
         message: storageError,
         onDismiss: onDismissStorage,
+      },
+    })
+  }
+
+  if (showUpdateBanner) {
+    candidates.push({
+      priority: BANNER_PRIORITY.update,
+      config: {
+        ...UPDATE_BANNER,
+        action: { label: 'Update', onClick: onUpdate },
+        onDismiss: onDismissUpdate,
       },
     })
   }

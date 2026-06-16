@@ -3,30 +3,31 @@ import { getActiveBanner } from './banners.js'
 
 describe('getActiveBanner', () => {
   const onDismissStorage = vi.fn()
+  const onUpdate = vi.fn()
+  const onDismissUpdate = vi.fn()
   const onInstall = vi.fn()
   const onDismissInstall = vi.fn()
 
+  const baseArgs = {
+    storageError: '',
+    onDismissStorage,
+    showUpdateBanner: false,
+    onUpdate,
+    onDismissUpdate,
+    showInstallBanner: false,
+    showManualHint: false,
+    onInstall,
+    onDismissInstall,
+  }
+
   it('returns null when no banners apply', () => {
-    expect(
-      getActiveBanner({
-        storageError: '',
-        onDismissStorage,
-        showInstallBanner: false,
-        showManualHint: false,
-        onInstall,
-        onDismissInstall,
-      }),
-    ).toBeNull()
+    expect(getActiveBanner(baseArgs)).toBeNull()
   })
 
   it('returns storage banner when storage error is set', () => {
     const banner = getActiveBanner({
+      ...baseArgs,
       storageError: 'Storage full',
-      onDismissStorage,
-      showInstallBanner: false,
-      showManualHint: false,
-      onInstall,
-      onDismissInstall,
     })
 
     expect(banner).toMatchObject({
@@ -36,14 +37,24 @@ describe('getActiveBanner', () => {
     })
   })
 
+  it('returns update banner when an update is available', () => {
+    const banner = getActiveBanner({
+      ...baseArgs,
+      showUpdateBanner: true,
+    })
+
+    expect(banner).toMatchObject({
+      variant: 'promo',
+      title: 'Update available',
+      action: { label: 'Update', onClick: onUpdate },
+      onDismiss: onDismissUpdate,
+    })
+  })
+
   it('returns install banner when install prompt is available', () => {
     const banner = getActiveBanner({
-      storageError: '',
-      onDismissStorage,
+      ...baseArgs,
       showInstallBanner: true,
-      showManualHint: false,
-      onInstall,
-      onDismissInstall,
     })
 
     expect(banner).toMatchObject({
@@ -56,12 +67,8 @@ describe('getActiveBanner', () => {
 
   it('returns manual install hint when native prompt is unavailable', () => {
     const banner = getActiveBanner({
-      storageError: '',
-      onDismissStorage,
-      showInstallBanner: false,
+      ...baseArgs,
       showManualHint: true,
-      onInstall,
-      onDismissInstall,
     })
 
     expect(banner).toMatchObject({
@@ -72,19 +79,32 @@ describe('getActiveBanner', () => {
     })
   })
 
-  it('prefers storage error over install banner', () => {
+  it('prefers storage error over update and install banners', () => {
     const banner = getActiveBanner({
+      ...baseArgs,
       storageError: 'Storage full',
-      onDismissStorage,
+      showUpdateBanner: true,
       showInstallBanner: true,
       showManualHint: true,
-      onInstall,
-      onDismissInstall,
     })
 
     expect(banner).toMatchObject({
       variant: 'error',
       message: 'Storage full',
+    })
+  })
+
+  it('prefers update banner over install banner', () => {
+    const banner = getActiveBanner({
+      ...baseArgs,
+      showUpdateBanner: true,
+      showInstallBanner: true,
+      showManualHint: true,
+    })
+
+    expect(banner).toMatchObject({
+      variant: 'promo',
+      title: 'Update available',
     })
   })
 })

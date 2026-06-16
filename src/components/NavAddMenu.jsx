@@ -2,6 +2,7 @@ import { useState, useRef } from 'react'
 import { createPortal } from 'react-dom'
 import { IconFile, IconFolder, IconMenu, IconTrash } from '../icons.jsx'
 import { NAV_ADD_MENU_WIDTH } from '../constants.js'
+import { APP_VERSION } from '../version.js'
 import { useFixedDropdown, useDropdownDismiss } from '../hooks/useDropdown.js'
 
 export function NavAddMenu({ onAddFiles, onAddFolder, onDeleteLibrary, hasLibraryContent }) {
@@ -71,6 +72,10 @@ export function NavAddMenu({ onAddFiles, onAddFolder, onDeleteLibrary, hasLibrar
               <IconTrash />
               <span>Delete library</span>
             </button>
+            <div className="menu-divider" role="separator" />
+            <div className="menu-version" aria-label={`Version ${APP_VERSION}`}>
+              v{APP_VERSION}
+            </div>
           </div>,
           document.body,
         )}

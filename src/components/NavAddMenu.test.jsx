@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest'
+import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { NavAddMenu } from './NavAddMenu.jsx'
+import { APP_VERSION } from '../version.js'
 
 describe('NavAddMenu', () => {
   it('offers delete library when the library has content', async () => {
@@ -38,5 +39,22 @@ describe('NavAddMenu', () => {
     await user.click(screen.getByRole('button', { name: 'Library menu' }))
 
     expect(screen.getByRole('menuitem', { name: /Delete library/i })).toBeDisabled()
+  })
+
+  it('shows the app version in the menu', async () => {
+    const user = userEvent.setup()
+
+    render(
+      <NavAddMenu
+        onAddFiles={() => {}}
+        onAddFolder={() => {}}
+        onDeleteLibrary={() => {}}
+        hasLibraryContent={false}
+      />,
+    )
+
+    await user.click(screen.getByRole('button', { name: 'Library menu' }))
+
+    expect(screen.getByLabelText(`Version ${APP_VERSION}`)).toHaveTextContent(`v${APP_VERSION}`)
   })
 })
