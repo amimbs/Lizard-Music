@@ -20,6 +20,7 @@ export function TrackList({
   onTogglePlay,
   onToggleFavorite,
   onAddToPlaylist,
+  onEditTrack,
   onRemoveTrack,
 }) {
   const virtualizer = useVirtualizer({
@@ -82,6 +83,7 @@ export function TrackList({
                   onPlay={() => (isCurrent ? onTogglePlay() : onPlayTrack(index))}
                   onToggleFavorite={() => onToggleFavorite(track.id)}
                   onAddToPlaylist={() => onAddToPlaylist(track.id)}
+                  onEdit={() => onEditTrack(track.id)}
                   onRemove={() => onRemoveTrack(track.id)}
                   removeLabel={removeLabel}
                 />

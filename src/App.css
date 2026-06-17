@@ -599,6 +599,35 @@
 .modal-create input:focus {
   border-color: var(--accent);
 }
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.modal-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.modal-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  outline: none;
+}
+.modal-field input:focus {
+  border-color: var(--accent);
+}
 .modal-playlist-list {
   list-style: none;
   margin: 0;

@@ -138,5 +138,6 @@ export function trackToRecord(track) {
     coverMime: track.coverMime ?? null,
     addedAt: track.addedAt ?? Date.now(),
     favorite: track.favorite ?? false,
+    metadataEdited: track.metadataEdited ?? false,
   }
 }

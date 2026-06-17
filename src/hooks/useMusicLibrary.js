@@ -59,9 +59,13 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
         }
         updated = {
           ...track,
-          title: common.title || track.title,
-          artist: common.artist || track.artist,
-          album: common.album || track.album,
+          ...(track.metadataEdited
+            ? {}
+            : {
+                title: common.title || track.title,
+                artist: common.artist || track.artist,
+                album: common.album || track.album,
+              }),
           cover,
           coverBlob,
           coverMime,
@@ -242,6 +246,32 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     }
   }, [tracks])
 
+  const updateTrackMetadata = useCallback(
+    async (id, { title, artist, album }) => {
+      const track = tracks.find((t) => t.id === id)
+      if (!track) return
+      const trimmedTitle = title.trim()
+      if (!trimmedTitle) return
+      const trimmedArtist = artist.trim()
+      const trimmedAlbum = album.trim()
+      const updated = {
+        ...track,
+        title: trimmedTitle,
+        artist: trimmedArtist || 'Unknown artist',
+        album: trimmedAlbum || 'Unknown album',
+        metadataEdited: true,
+      }
+      albumBackfillQueueRef.current.delete(id)
+      setTracks((prev) => prev.map((t) => (t.id === id ? updated : t)))
+      try {
+        await putTrack(trackToRecord(updated))
+      } catch {
+        // In-memory state already updated.
+      }
+    },
+    [tracks],
+  )
+
   const clearLibrary = useCallback(async () => {
     tracks.forEach((track) => {
       revokeUrl(track.url)
@@ -285,6 +315,7 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
             duration: record.duration,
             addedAt: record.addedAt,
             favorite: record.favorite ?? false,
+            metadataEdited: record.metadataEdited ?? false,
           }
         })
         setTracks(restored)
@@ -363,6 +394,7 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     addTrackToPlaylist,
     removeTrackFromPlaylist,
     toggleFavorite,
+    updateTrackMetadata,
     clearLibrary,
   }
 }

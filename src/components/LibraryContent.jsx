@@ -52,6 +52,7 @@ export function LibraryContent({
   onTogglePlay,
   onToggleFavorite,
   onAddToPlaylist,
+  onEditTrack,
   onRemoveTrack,
 }) {
   const contentRef = useRef(null)
@@ -169,6 +170,7 @@ export function LibraryContent({
         onTogglePlay={onTogglePlay}
         onToggleFavorite={onToggleFavorite}
         onAddToPlaylist={onAddToPlaylist}
+        onEditTrack={onEditTrack}
         onRemoveTrack={onRemoveTrack}
       />
     )

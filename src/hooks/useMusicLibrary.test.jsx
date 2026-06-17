@@ -1,7 +1,12 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act, waitFor } from '@testing-library/react'
+import { parseBlob } from 'music-metadata-browser'
 import * as libraryDb from '../libraryDb.js'
 import { useMusicLibrary } from './useMusicLibrary.js'
+
+vi.mock('music-metadata-browser', () => ({
+  parseBlob: vi.fn(),
+}))
 
 vi.mock('../libraryDb.js', () => ({
   getAllTracks: vi.fn(),
@@ -54,6 +59,15 @@ describe('useMusicLibrary', () => {
     libraryDb.deletePlaylist.mockResolvedValue(undefined)
     libraryDb.deleteTrack.mockResolvedValue(undefined)
     libraryDb.clearLibrary.mockResolvedValue(undefined)
+    libraryDb.putTrack.mockResolvedValue(undefined)
+    parseBlob.mockResolvedValue({
+      common: {
+        title: 'Tag Title',
+        artist: 'Tag Artist',
+        album: 'Tag Album',
+      },
+      format: { duration: 200 },
+    })
   })
 
   afterEach(() => {
@@ -127,6 +141,74 @@ describe('useMusicLibrary', () => {
       expect(result.current.playlists).toHaveLength(0)
       expect(libraryDb.clearLibrary).toHaveBeenCalledOnce()
       expect(revokeUrl).toHaveBeenCalled()
+    })
+  })
+
+  describe('updateTrackMetadata', () => {
+    it('updates track fields in memory and persists with metadataEdited', async () => {
+      const { result } = await loadLibrary()
+
+      await act(async () => {
+        await result.current.updateTrackMetadata('t1', {
+          title: '  New Title  ',
+          artist: '',
+          album: '  New Album  ',
+        })
+      })
+
+      const updated = result.current.tracks.find((t) => t.id === 't1')
+      expect(updated.title).toBe('New Title')
+      expect(updated.artist).toBe('Unknown artist')
+      expect(updated.album).toBe('New Album')
+      expect(updated.metadataEdited).toBe(true)
+      expect(libraryDb.putTrack).toHaveBeenCalledWith(
+        expect.objectContaining({
+          id: 't1',
+          title: 'New Title',
+          artist: 'Unknown artist',
+          album: 'New Album',
+          metadataEdited: true,
+        }),
+      )
+    })
+
+    it('does not save when title is blank', async () => {
+      const { result } = await loadLibrary()
+      const original = result.current.tracks.find((t) => t.id === 't1')
+
+      await act(async () => {
+        await result.current.updateTrackMetadata('t1', {
+          title: '   ',
+          artist: 'Artist',
+          album: 'Album',
+        })
+      })
+
+      const unchanged = result.current.tracks.find((t) => t.id === 't1')
+      expect(unchanged.title).toBe(original.title)
+      expect(libraryDb.putTrack).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('parseTrackMetadata protection', () => {
+    it('does not overwrite title, artist, or album when metadataEdited is true', async () => {
+      libraryDb.getAllTracks.mockResolvedValue([
+        {
+          ...makeTrackRecord('t1', 'User Title'),
+          artist: 'User Artist',
+          album: null,
+          metadataEdited: true,
+        },
+      ])
+
+      const { result } = await loadLibrary()
+
+      await waitFor(() => expect(parseBlob).toHaveBeenCalled())
+
+      const track = result.current.tracks.find((t) => t.id === 't1')
+      expect(track.title).toBe('User Title')
+      expect(track.artist).toBe('User Artist')
+      expect(track.album).toBe('Unknown album')
     })
   })
 })

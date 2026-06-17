@@ -17,6 +17,7 @@ import { AppBanner } from './components/AppBanner.jsx'
 import { UpdateOverlay } from './components/UpdateOverlay.jsx'
 import { getActiveBanner } from './utils/banners.js'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
+import { EditTrackModal } from './components/EditTrackModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
 import {
   getTrackDeleteMode,
@@ -34,6 +35,7 @@ export default function App() {
 
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState(null)
+  const [editTrackId, setEditTrackId] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deletePlaylistConfirmId, setDeletePlaylistConfirmId] = useState(null)
   const [clearLibraryStep, setClearLibraryStep] = useState(null)
@@ -56,6 +58,7 @@ export default function App() {
     addTrackToPlaylist,
     removeTrackFromPlaylist,
     toggleFavorite,
+    updateTrackMetadata,
     clearLibrary,
   } = useMusicLibrary({ registerUrl, revokeUrl })
 
@@ -134,6 +137,11 @@ export default function App() {
   const addToPlaylistTrack = useMemo(
     () => (addToPlaylistTrackId ? tracks.find((t) => t.id === addToPlaylistTrackId) ?? null : null),
     [addToPlaylistTrackId, tracks],
+  )
+
+  const editTrack = useMemo(
+    () => (editTrackId ? tracks.find((t) => t.id === editTrackId) ?? null : null),
+    [editTrackId, tracks],
   )
 
   const handleAddFiles = useCallback(
@@ -336,6 +344,7 @@ export default function App() {
         onTogglePlay={togglePlay}
         onToggleFavorite={toggleFavorite}
         onAddToPlaylist={setAddToPlaylistTrackId}
+        onEditTrack={setEditTrackId}
         onRemoveTrack={handleRemoveTrack}
       />
 
@@ -386,6 +395,17 @@ export default function App() {
             setAddToPlaylistTrackId(null)
           }}
           onClose={() => setAddToPlaylistTrackId(null)}
+        />
+      )}
+
+      {editTrack && (
+        <EditTrackModal
+          track={editTrack}
+          onSave={async (fields) => {
+            await updateTrackMetadata(editTrack.id, fields)
+            setEditTrackId(null)
+          }}
+          onClose={() => setEditTrackId(null)}
         />
       )}
 
