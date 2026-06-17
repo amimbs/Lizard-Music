@@ -1,11 +1,10 @@
 import { memo } from 'react'
-import { IconPlay, IconMusic } from '../icons.jsx'
+import { IconMusic } from '../icons.jsx'
 import { formatTime } from '../utils/format.js'
 import { TrackMenu } from './TrackMenu.jsx'
 
 export const TrackRow = memo(function TrackRow({
   track,
-  displayIndex,
   isCurrent,
   isPlaying,
   isFavorite,
@@ -20,12 +19,19 @@ export const TrackRow = memo(function TrackRow({
     onPlay()
   }
 
+  const rowLabel = isCurrent
+    ? isPlaying
+      ? `Playing ${track.title}`
+      : `Paused ${track.title}`
+    : `Play ${track.title}`
+
   return (
     <div
       className={`track ${isCurrent ? 'current' : ''}`}
       onClick={handleRowClick}
       role="button"
       tabIndex={0}
+      aria-label={rowLabel}
       onKeyDown={(e) => {
         if (e.key === 'Enter' || e.key === ' ') {
           e.preventDefault()
@@ -33,19 +39,15 @@ export const TrackRow = memo(function TrackRow({
         }
       }}
     >
-      <button className="col-num" onClick={onPlay} aria-label={isPlaying ? 'Pause' : 'Play'}>
-        {isPlaying ? (
-          <span className="eq"><i></i><i></i><i></i></span>
-        ) : (
-          <>
-            <span className="num">{displayIndex + 1}</span>
-            <span className="play-hover"><IconPlay /></span>
-          </>
-        )}
-      </button>
       <div className="col-title">
         <div className="cover-sm">
-          {track.cover ? <img src={track.cover} alt="" loading="lazy" /> : <IconMusic />}
+          {isPlaying ? (
+            <span className="eq" aria-hidden="true"><i></i><i></i><i></i></span>
+          ) : track.cover ? (
+            <img src={track.cover} alt="" loading="lazy" />
+          ) : (
+            <IconMusic />
+          )}
         </div>
         <div className="title-meta">
           <div className="t-title" title={track.title}>{track.title}</div>

@@ -53,7 +53,6 @@ export function TrackList({
         </span>
       </div>
       <div className="playlist-head">
-        <span className="col-num">#</span>
         <span className="col-title">Title</span>
         <span className="col-dur">Time</span>
         <span className="col-actions" aria-hidden="true" />
@@ -80,7 +79,6 @@ export function TrackList({
               >
                 <TrackRow
                   track={track}
-                  displayIndex={virtualRow.index}
                   isCurrent={isCurrent}
                   isPlaying={isPlaying && isCurrent}
                   isFavorite={track.favorite}
