@@ -8,6 +8,7 @@ function makeTrack(overrides = {}) {
     id: overrides.id ?? 't1',
     title: overrides.title ?? 'Alpha',
     artist: overrides.artist ?? 'Artist A',
+    album: overrides.album ?? 'Unknown album',
     favorite: overrides.favorite ?? false,
     addedAt: overrides.addedAt ?? Date.now(),
   }
@@ -45,6 +46,19 @@ describe('useTrackViews', () => {
     expect(result.current.displayed[0].track.id).toBe('t2')
   })
 
+  it('searches by album name', () => {
+    const tracks = [
+      makeTrack({ id: 't1', title: 'Come Together', album: 'Abbey Road' }),
+      makeTrack({ id: 't2', title: 'Let It Be', album: 'Let It Be' }),
+    ]
+
+    const { result } = renderHook(() => useTrackViews({ tracks, playlists: [] }))
+
+    act(() => result.current.setSearch('abbey'))
+    expect(result.current.displayed).toHaveLength(1)
+    expect(result.current.displayed[0].track.id).toBe('t1')
+  })
+
   it('shows only recent tracks in the recent view', () => {
     const now = Date.now()
     const tracks = [
@@ -77,5 +91,65 @@ describe('useTrackViews', () => {
     expect(result.current.selectedPlaylist?.name).toBe('Mix')
     expect(result.current.displayed.map(({ track }) => track.id)).toEqual(['t3', 't1'])
     expect(result.current.playOrder).toEqual([2, 0])
+  })
+
+  it('builds album groups and drill-down track list', () => {
+    const tracks = [
+      makeTrack({ id: 't1', title: 'One', artist: 'Band A', album: 'Album X' }),
+      makeTrack({ id: 't2', title: 'Two', artist: 'Band A', album: 'Album X' }),
+      makeTrack({ id: 't3', title: 'Three', artist: 'Band B', album: 'Album X' }),
+    ]
+
+    const { result } = renderHook(() => useTrackViews({ tracks, playlists: [] }))
+
+    act(() => result.current.setView('albums'))
+    expect(result.current.displayedAlbumGroups).toHaveLength(2)
+
+    act(() => {
+      result.current.setSearch('band b')
+    })
+    expect(result.current.displayedAlbumGroups).toHaveLength(1)
+    expect(result.current.displayedAlbumGroups[0].artist).toBe('Band B')
+
+    act(() => {
+      result.current.setSearch('')
+    })
+    const albumKeyForBandA = result.current.displayedAlbumGroups.find(
+      (g) => g.artist === 'Band A',
+    ).key
+
+    act(() => {
+      result.current.setSelectedAlbumKey(albumKeyForBandA)
+    })
+    expect(result.current.displayed.map(({ track }) => track.id)).toEqual(['t1', 't2'])
+    expect(result.current.trackListPageTitle).toBe('Album X')
+  })
+
+  it('builds artist groups and nested album drill-down', () => {
+    const tracks = [
+      makeTrack({ id: 't1', title: 'One', artist: 'Band A', album: 'Album 1' }),
+      makeTrack({ id: 't2', title: 'Two', artist: 'Band A', album: 'Album 2' }),
+      makeTrack({ id: 't3', title: 'Three', artist: 'Band B', album: 'Album 1' }),
+    ]
+
+    const { result } = renderHook(() => useTrackViews({ tracks, playlists: [] }))
+
+    act(() => result.current.setView('artists'))
+    expect(result.current.displayedArtistGroups).toHaveLength(2)
+
+    act(() => result.current.setSelectedArtist('Band A'))
+    expect(result.current.displayedArtistAlbums).toHaveLength(2)
+
+    act(() => {
+      result.current.setSearch('album 2')
+    })
+    expect(result.current.displayedArtistAlbums).toHaveLength(1)
+
+    act(() => {
+      result.current.setSearch('')
+      result.current.setSelectedArtistAlbum('Album 2')
+    })
+    expect(result.current.displayed.map(({ track }) => track.id)).toEqual(['t2'])
+    expect(result.current.trackListPageTitle).toBe('Album 2')
   })
 })

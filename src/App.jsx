@@ -17,6 +17,7 @@ import { AppBanner } from './components/AppBanner.jsx'
 import { UpdateOverlay } from './components/UpdateOverlay.jsx'
 import { getActiveBanner } from './utils/banners.js'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
+import { EditTrackModal } from './components/EditTrackModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
 import {
   getTrackDeleteMode,
@@ -34,6 +35,7 @@ export default function App() {
 
   const [newPlaylistName, setNewPlaylistName] = useState('')
   const [addToPlaylistTrackId, setAddToPlaylistTrackId] = useState(null)
+  const [editTrackId, setEditTrackId] = useState(null)
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deletePlaylistConfirmId, setDeletePlaylistConfirmId] = useState(null)
   const [clearLibraryStep, setClearLibraryStep] = useState(null)
@@ -56,6 +58,7 @@ export default function App() {
     addTrackToPlaylist,
     removeTrackFromPlaylist,
     toggleFavorite,
+    updateTrackMetadata,
     clearLibrary,
   } = useMusicLibrary({ registerUrl, revokeUrl })
 
@@ -66,10 +69,20 @@ export default function App() {
     setView,
     selectedPlaylistId,
     setSelectedPlaylistId,
+    selectedAlbumKey,
+    setSelectedAlbumKey,
+    selectedArtist,
+    setSelectedArtist,
+    selectedArtistAlbum,
+    setSelectedArtistAlbum,
     selectedPlaylist,
     displayedPlaylists,
+    displayedAlbumGroups,
+    displayedArtistGroups,
+    displayedArtistAlbums,
     displayed,
     playOrder,
+    trackListPageTitle,
     hasTracks,
     recentEmpty,
     favoritesEmpty,
@@ -97,7 +110,6 @@ export default function App() {
     next,
     prev,
     seekTo,
-    stop,
     cycleRepeat,
     onTimeUpdate,
     onLoadedMetadata,
@@ -124,6 +136,11 @@ export default function App() {
   const addToPlaylistTrack = useMemo(
     () => (addToPlaylistTrackId ? tracks.find((t) => t.id === addToPlaylistTrackId) ?? null : null),
     [addToPlaylistTrackId, tracks],
+  )
+
+  const editTrack = useMemo(
+    () => (editTrackId ? tracks.find((t) => t.id === editTrackId) ?? null : null),
+    [editTrackId, tracks],
   )
 
   const handleAddFiles = useCallback(
@@ -206,7 +223,15 @@ export default function App() {
     setClearLibraryStep(null)
     setCurrentIndex(-1)
     setIsPlaying(false)
-    switchView(setView, setSelectedPlaylistId, setSearch, 'songs')
+    switchView({
+      setView,
+      setSelectedPlaylistId,
+      setSelectedAlbumKey,
+      setSelectedArtist,
+      setSelectedArtistAlbum,
+      setSearch,
+      nextView: 'songs',
+    })
     setDeleteConfirm(null)
     setDeletePlaylistConfirmId(null)
     setAddToPlaylistTrackId(null)
@@ -222,20 +247,21 @@ export default function App() {
     setIsPlaying,
     setView,
     setSelectedPlaylistId,
+    setSelectedAlbumKey,
+    setSelectedArtist,
+    setSelectedArtistAlbum,
     setSearch,
     audioRef,
   ])
 
   useMediaSession({
     currentTrack,
-    isPlaying,
     progress,
     duration,
     setIsPlaying,
     next,
     prev,
     seekTo,
-    onStop: stop,
   })
 
   useKeyboardShortcuts({ togglePlay, next, prev })
@@ -253,9 +279,15 @@ export default function App() {
         view={view}
         setView={setView}
         setSelectedPlaylistId={setSelectedPlaylistId}
+        setSelectedAlbumKey={setSelectedAlbumKey}
+        setSelectedArtist={setSelectedArtist}
+        setSelectedArtistAlbum={setSelectedArtistAlbum}
         search={search}
         setSearch={setSearch}
         selectedPlaylistId={selectedPlaylistId}
+        selectedAlbumKey={selectedAlbumKey}
+        selectedArtist={selectedArtist}
+        selectedArtistAlbum={selectedArtistAlbum}
         fileInputRef={fileInputRef}
         folderInputRef={folderInputRef}
         onAddFiles={handleAddFiles}
@@ -273,10 +305,17 @@ export default function App() {
         libraryReady={libraryReady}
         view={view}
         selectedPlaylistId={selectedPlaylistId}
+        selectedAlbumKey={selectedAlbumKey}
+        selectedArtist={selectedArtist}
+        selectedArtistAlbum={selectedArtistAlbum}
         selectedPlaylist={selectedPlaylist}
         displayedPlaylists={displayedPlaylists}
+        displayedAlbumGroups={displayedAlbumGroups}
+        displayedArtistGroups={displayedArtistGroups}
+        displayedArtistAlbums={displayedArtistAlbums}
         displayed={displayed}
         search={search}
+        trackListPageTitle={trackListPageTitle}
         hasTracks={hasTracks}
         recentEmpty={recentEmpty}
         favoritesEmpty={favoritesEmpty}
@@ -286,6 +325,12 @@ export default function App() {
         onCreatePlaylist={handleCreatePlaylist}
         onOpenPlaylist={setSelectedPlaylistId}
         onDeletePlaylist={handleDeletePlaylist}
+        onOpenAlbum={setSelectedAlbumKey}
+        onOpenArtist={setSelectedArtist}
+        onOpenArtistAlbum={setSelectedArtistAlbum}
+        onBackFromAlbum={() => setSelectedAlbumKey(null)}
+        onBackFromArtistAlbums={() => setSelectedArtist(null)}
+        onBackFromArtistAlbum={() => setSelectedArtistAlbum(null)}
         onPickFiles={pickFiles}
         onPickFolder={pickFolder}
         onBackToPlaylists={() => setSelectedPlaylistId(null)}
@@ -296,6 +341,7 @@ export default function App() {
         onTogglePlay={togglePlay}
         onToggleFavorite={toggleFavorite}
         onAddToPlaylist={setAddToPlaylistTrackId}
+        onEditTrack={setEditTrackId}
         onRemoveTrack={handleRemoveTrack}
       />
 
@@ -346,6 +392,17 @@ export default function App() {
             setAddToPlaylistTrackId(null)
           }}
           onClose={() => setAddToPlaylistTrackId(null)}
+        />
+      )}
+
+      {editTrack && (
+        <EditTrackModal
+          track={editTrack}
+          onSave={async (fields) => {
+            await updateTrackMetadata(editTrack.id, fields)
+            setEditTrackId(null)
+          }}
+          onClose={() => setEditTrackId(null)}
         />
       )}
 

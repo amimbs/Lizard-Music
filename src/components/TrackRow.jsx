@@ -11,6 +11,7 @@ export const TrackRow = memo(function TrackRow({
   onPlay,
   onToggleFavorite,
   onAddToPlaylist,
+  onEdit,
   onRemove,
   removeLabel,
 }) {
@@ -61,6 +62,7 @@ export const TrackRow = memo(function TrackRow({
           removeLabel={removeLabel}
           onToggleFavorite={onToggleFavorite}
           onAddToPlaylist={onAddToPlaylist}
+          onEdit={onEdit}
           onRemove={onRemove}
         />
       </div>

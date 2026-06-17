@@ -1,5 +1,8 @@
 import { useRef } from 'react'
 import { PlaylistsBrowser } from './PlaylistsBrowser.jsx'
+import { AlbumsBrowser } from './AlbumsBrowser.jsx'
+import { ArtistsBrowser } from './ArtistsBrowser.jsx'
+import { ArtistAlbumsBrowser } from './ArtistAlbumsBrowser.jsx'
 import { EmptyState } from './EmptyState.jsx'
 import { TrackList } from './TrackList.jsx'
 import {
@@ -13,10 +16,17 @@ export function LibraryContent({
   libraryReady,
   view,
   selectedPlaylistId,
+  selectedAlbumKey,
+  selectedArtist,
+  selectedArtistAlbum,
   selectedPlaylist,
   displayedPlaylists,
+  displayedAlbumGroups,
+  displayedArtistGroups,
+  displayedArtistAlbums,
   displayed,
   search,
+  trackListPageTitle,
   hasTracks,
   recentEmpty,
   favoritesEmpty,
@@ -26,9 +36,15 @@ export function LibraryContent({
   onCreatePlaylist,
   onOpenPlaylist,
   onDeletePlaylist,
+  onOpenAlbum,
+  onOpenArtist,
+  onOpenArtistAlbum,
+  onBackFromAlbum,
+  onBackFromArtistAlbums,
+  onBackFromArtistAlbum,
+  onBackToPlaylists,
   onPickFiles,
   onPickFolder,
-  onBackToPlaylists,
   currentIndex,
   isPlaying,
   estimateRowSize,
@@ -36,6 +52,7 @@ export function LibraryContent({
   onTogglePlay,
   onToggleFavorite,
   onAddToPlaylist,
+  onEditTrack,
   onRemoveTrack,
 }) {
   const contentRef = useRef(null)
@@ -63,6 +80,44 @@ export function LibraryContent({
       )
     }
 
+    if (view === 'albums' && !selectedAlbumKey) {
+      if (!hasTracks) {
+        return <EmptyState onPickFiles={onPickFiles} onPickFolder={onPickFolder} />
+      }
+      return (
+        <AlbumsBrowser
+          groups={displayedAlbumGroups}
+          hasSearch={!!search.trim()}
+          onOpenAlbum={onOpenAlbum}
+        />
+      )
+    }
+
+    if (view === 'artists' && !selectedArtist) {
+      if (!hasTracks) {
+        return <EmptyState onPickFiles={onPickFiles} onPickFolder={onPickFolder} />
+      }
+      return (
+        <ArtistsBrowser
+          groups={displayedArtistGroups}
+          hasSearch={!!search.trim()}
+          onOpenArtist={onOpenArtist}
+        />
+      )
+    }
+
+    if (view === 'artists' && selectedArtist && !selectedArtistAlbum) {
+      return (
+        <ArtistAlbumsBrowser
+          artist={selectedArtist}
+          groups={displayedArtistAlbums}
+          hasSearch={!!search.trim()}
+          onBack={onBackFromArtistAlbums}
+          onOpenAlbum={onOpenArtistAlbum}
+        />
+      )
+    }
+
     if (!hasTracks) {
       return <EmptyState onPickFiles={onPickFiles} onPickFolder={onPickFolder} />
     }
@@ -73,14 +128,41 @@ export function LibraryContent({
       return <PlaylistDetailEmpty onBack={onBackToPlaylists} />
     }
 
+    const showBack =
+      (view === 'playlists' && selectedPlaylistId) ||
+      (view === 'albums' && selectedAlbumKey) ||
+      (view === 'artists' && selectedArtist && selectedArtistAlbum)
+
+    const onBack =
+      view === 'playlists'
+        ? onBackToPlaylists
+        : view === 'albums'
+          ? onBackFromAlbum
+          : onBackFromArtistAlbum
+
+    const backLabel =
+      view === 'playlists'
+        ? 'Back to playlists'
+        : view === 'albums'
+          ? 'Back to albums'
+          : 'Back to albums'
+
+    const removeLabel =
+      view === 'playlists' && selectedPlaylistId
+        ? 'Remove from playlist'
+        : 'Remove from library'
+
     return (
       <TrackList
         contentRef={contentRef}
         displayed={displayed}
         search={search}
         view={view}
-        selectedPlaylistId={selectedPlaylistId}
-        selectedPlaylist={selectedPlaylist}
+        pageTitle={trackListPageTitle}
+        showBack={showBack}
+        onBack={onBack}
+        backLabel={backLabel}
+        removeLabel={removeLabel}
         currentIndex={currentIndex}
         isPlaying={isPlaying}
         estimateRowSize={estimateRowSize}
@@ -88,8 +170,8 @@ export function LibraryContent({
         onTogglePlay={onTogglePlay}
         onToggleFavorite={onToggleFavorite}
         onAddToPlaylist={onAddToPlaylist}
+        onEditTrack={onEditTrack}
         onRemoveTrack={onRemoveTrack}
-        onBackToPlaylists={onBackToPlaylists}
       />
     )
   }

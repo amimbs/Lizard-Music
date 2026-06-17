@@ -51,6 +51,12 @@ export const IconHeartFilled = () => (
 export const IconPlaylist = () => (
   <svg viewBox="0 0 24 24" style={s}><path d="M15 6H3v2h12V6zm0 4H3v2h12v-2zM3 16h8v-2H3v2zM17 6v8.18c-.31-.11-.65-.18-1-.18-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3V8h3V6h-5z" /></svg>
 )
+export const IconAlbum = () => (
+  <svg viewBox="0 0 24 24" style={s}><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 14.5a4.5 4.5 0 1 1 0-9 4.5 4.5 0 0 1 0 9zM12 6a6 6 0 1 0 0 12 6 6 0 0 0 0-12z" /></svg>
+)
+export const IconArtist = () => (
+  <svg viewBox="0 0 24 24" style={s}><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>
+)
 export const IconPlaylistAdd = () => (
   <svg viewBox="0 0 24 24" style={s}><path d="M14 10H3v2h11v-2zm0-4H3v2h11V6zM3 16h7v-2H3v2zm10.5 2.5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm0-9.5c-1.1 0-2 .9-2 2s.9 2 2 2 2-.9 2-2-.9-2-2-2zm4.5 4.5V11h-1.5v1.5H17v1.5h1.5V15H20v-1.5h1.5V12H20z" /></svg>
 )
@@ -59,6 +65,9 @@ export const IconPlus = () => (
 )
 export const IconBack = () => (
   <svg viewBox="0 0 24 24" style={s}><path d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z" /></svg>
+)
+export const IconEdit = () => (
+  <svg viewBox="0 0 24 24" style={s}><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04a1.003 1.003 0 0 0 0-1.42l-2.34-2.34a1.003 1.003 0 0 0-1.42 0l-1.83 1.83 3.75 3.75 1.84-1.82z" /></svg>
 )
 export const IconMenu = () => (
   <svg viewBox="0 0 24 24" style={s}><path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z" /></svg>

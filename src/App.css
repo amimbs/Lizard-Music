@@ -349,7 +349,8 @@
   margin-top: 16px;
 }
 
-.playlists-browser {
+.playlists-browser,
+.browse-browser {
   max-width: 1100px;
   margin: 0 auto;
 }
@@ -447,6 +448,79 @@
   background: rgba(248, 113, 113, 0.12);
 }
 
+.browse-cards {
+  list-style: none;
+  margin: 0;
+  padding: 0 16px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.browse-card {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+  padding: 14px 16px;
+  border-radius: 12px;
+  text-align: left;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  transition: background 0.15s ease, border-color 0.15s ease;
+}
+.browse-card:hover {
+  background: var(--bg-elev-2);
+  border-color: var(--accent-border);
+}
+.browse-card-cover {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+  background: var(--accent-soft);
+}
+.browse-card-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.browse-card-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 22px;
+  color: var(--accent);
+}
+.browse-card-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.browse-card-title {
+  font-weight: 600;
+  font-size: 15px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.browse-card-subtitle {
+  font-size: 13px;
+  color: var(--text-dim);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.browse-card-count {
+  font-size: 13px;
+  color: var(--text-dim);
+}
+
 .playlists-empty {
   min-height: 40vh;
 }
@@ -523,6 +597,35 @@
   outline: none;
 }
 .modal-create input:focus {
+  border-color: var(--accent);
+}
+.modal-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.modal-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.modal-field-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-dim);
+}
+.modal-field input {
+  width: 100%;
+  min-width: 0;
+  padding: 9px 12px;
+  border-radius: 8px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  outline: none;
+}
+.modal-field input:focus {
   border-color: var(--accent);
 }
 .modal-playlist-list {
@@ -1185,6 +1288,9 @@ input[type='range']::-moz-range-thumb {
     justify-content: center;
   }
   .playlist-cards {
+    padding: 0 10px 12px;
+  }
+  .browse-cards {
     padding: 0 10px 12px;
   }
   .np-favorite {

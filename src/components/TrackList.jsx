@@ -8,8 +8,11 @@ export function TrackList({
   displayed,
   search,
   view,
-  selectedPlaylistId,
-  selectedPlaylist,
+  pageTitle,
+  showBack,
+  onBack,
+  backLabel,
+  removeLabel,
   currentIndex,
   isPlaying,
   estimateRowSize,
@@ -17,8 +20,8 @@ export function TrackList({
   onTogglePlay,
   onToggleFavorite,
   onAddToPlaylist,
+  onEditTrack,
   onRemoveTrack,
-  onBackToPlaylists,
 }) {
   const virtualizer = useVirtualizer({
     count: displayed.length,
@@ -27,27 +30,22 @@ export function TrackList({
     overscan: 8,
   })
 
-  const pageTitle =
-    view === 'playlists' && selectedPlaylist
-      ? selectedPlaylist.name
-      : VIEW_TITLES[view]
-
-  const isPlaylistView = view === 'playlists' && selectedPlaylistId
+  const resolvedTitle = pageTitle ?? VIEW_TITLES[view] ?? 'Songs'
 
   return (
     <div className="playlist">
       <div className="page-title">
-        {isPlaylistView && (
+        {showBack && (
           <button
             type="button"
             className="page-back"
-            onClick={onBackToPlaylists}
-            aria-label="Back to playlists"
+            onClick={onBack}
+            aria-label={backLabel}
           >
             <IconBack />
           </button>
         )}
-        <h1>{pageTitle}</h1>
+        <h1>{resolvedTitle}</h1>
         <span className="page-count">
           {displayed.length} {displayed.length === 1 ? 'song' : 'songs'}
         </span>
@@ -85,10 +83,9 @@ export function TrackList({
                   onPlay={() => (isCurrent ? onTogglePlay() : onPlayTrack(index))}
                   onToggleFavorite={() => onToggleFavorite(track.id)}
                   onAddToPlaylist={() => onAddToPlaylist(track.id)}
+                  onEdit={() => onEditTrack(track.id)}
                   onRemove={() => onRemoveTrack(track.id)}
-                  removeLabel={
-                    isPlaylistView ? 'Remove from playlist' : 'Remove from library'
-                  }
+                  removeLabel={removeLabel}
                 />
               </div>
             )

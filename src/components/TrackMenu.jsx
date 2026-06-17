@@ -4,13 +4,14 @@ import {
   IconHeart,
   IconHeartFilled,
   IconPlaylistAdd,
+  IconEdit,
   IconTrash,
   IconMenu,
 } from '../icons.jsx'
 import { TRACK_MENU_WIDTH } from '../constants.js'
 import { useFixedDropdown, useDropdownDismiss } from '../hooks/useDropdown.js'
 
-export function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist, onRemove }) {
+export function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPlaylist, onEdit, onRemove }) {
   const [open, setOpen] = useState(false)
   const triggerRef = useRef(null)
   const menuRef = useRef(null)
@@ -64,6 +65,15 @@ export function TrackMenu({ isFavorite, removeLabel, onToggleFavorite, onAddToPl
             >
               <IconPlaylistAdd />
               <span>Add to playlist</span>
+            </button>
+            <button
+              type="button"
+              role="menuitem"
+              className="menu-item"
+              onClick={runAction(onEdit)}
+            >
+              <IconEdit />
+              <span>Edit</span>
             </button>
             <button
               type="button"

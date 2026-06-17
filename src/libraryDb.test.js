@@ -34,6 +34,7 @@ describe('trackToRecord', () => {
       file,
       title: 'Song Title',
       artist: 'Artist Name',
+      album: 'Album Name',
       duration: 180,
       coverBlob,
       coverMime: 'image/jpeg',
@@ -48,11 +49,13 @@ describe('trackToRecord', () => {
       audioBlob: file,
       title: 'Song Title',
       artist: 'Artist Name',
+      album: 'Album Name',
       duration: 180,
       coverBlob,
       coverMime: 'image/jpeg',
       addedAt: 1000,
       favorite: true,
+      metadataEdited: false,
     })
   })
 
@@ -68,9 +71,26 @@ describe('trackToRecord', () => {
     })
 
     expect(record.mimeType).toBe('audio/mpeg')
+    expect(record.album).toBe('Unknown album')
     expect(record.coverBlob).toBeNull()
     expect(record.coverMime).toBeNull()
     expect(record.addedAt).toBe(Date.parse('2026-01-15T12:00:00Z'))
     expect(record.favorite).toBe(false)
+  })
+
+  it('persists metadataEdited when set', () => {
+    const file = new File(['audio'], 'song.mp3', { type: 'audio/mpeg' })
+
+    const record = trackToRecord({
+      id: 'track-3',
+      file,
+      title: 'Edited Title',
+      artist: 'Edited Artist',
+      album: 'Edited Album',
+      duration: 120,
+      metadataEdited: true,
+    })
+
+    expect(record.metadataEdited).toBe(true)
   })
 })

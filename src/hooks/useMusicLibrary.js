@@ -24,6 +24,8 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
   const [libraryReady, setLibraryReady] = useState(false)
   const [storageError, setStorageError] = useState('')
   const probedDurationRef = useRef(new Set())
+  const albumBackfillQueueRef = useRef(new Set())
+  const albumBackfillAttemptedRef = useRef(new Set())
 
   const persistTrack = useCallback(async (track) => {
     try {
@@ -57,8 +59,13 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
         }
         updated = {
           ...track,
-          title: common.title || track.title,
-          artist: common.artist || track.artist,
+          ...(track.metadataEdited
+            ? {}
+            : {
+                title: common.title || track.title,
+                artist: common.artist || track.artist,
+                album: common.album || track.album,
+              }),
           cover,
           coverBlob,
           coverMime,
@@ -99,6 +106,7 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
         url: registerUrl(URL.createObjectURL(file)),
         title: prettyName(file.name),
         artist: 'Unknown artist',
+        album: 'Unknown album',
         cover: null,
         coverBlob: null,
         coverMime: null,
@@ -238,6 +246,32 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     }
   }, [tracks])
 
+  const updateTrackMetadata = useCallback(
+    async (id, { title, artist, album }) => {
+      const track = tracks.find((t) => t.id === id)
+      if (!track) return
+      const trimmedTitle = title.trim()
+      if (!trimmedTitle) return
+      const trimmedArtist = artist.trim()
+      const trimmedAlbum = album.trim()
+      const updated = {
+        ...track,
+        title: trimmedTitle,
+        artist: trimmedArtist || 'Unknown artist',
+        album: trimmedAlbum || 'Unknown album',
+        metadataEdited: true,
+      }
+      albumBackfillQueueRef.current.delete(id)
+      setTracks((prev) => prev.map((t) => (t.id === id ? updated : t)))
+      try {
+        await putTrack(trackToRecord(updated))
+      } catch {
+        // In-memory state already updated.
+      }
+    },
+    [tracks],
+  )
+
   const clearLibrary = useCallback(async () => {
     tracks.forEach((track) => {
       revokeUrl(track.url)
@@ -246,6 +280,8 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     setTracks([])
     setPlaylists([])
     probedDurationRef.current.clear()
+    albumBackfillQueueRef.current.clear()
+    albumBackfillAttemptedRef.current.clear()
     try {
       await clearLibraryDb()
     } catch {
@@ -260,6 +296,7 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
         const [records, savedPlaylists] = await Promise.all([getAllTracks(), getAllPlaylists()])
         if (cancelled) return
         const restored = records.map((record) => {
+          if (record.album == null) albumBackfillQueueRef.current.add(record.id)
           const file = new File([record.audioBlob], record.fileName, { type: record.mimeType })
           const url = registerUrl(URL.createObjectURL(file))
           const cover = record.coverBlob
@@ -271,12 +308,14 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
             url,
             title: record.title,
             artist: record.artist,
+            album: record.album ?? 'Unknown album',
             cover,
             coverBlob: record.coverBlob ?? null,
             coverMime: record.coverMime ?? null,
             duration: record.duration,
             addedAt: record.addedAt,
             favorite: record.favorite ?? false,
+            metadataEdited: record.metadataEdited ?? false,
           }
         })
         setTracks(restored)
@@ -316,6 +355,31 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     }
   }, [libraryReady, tracks, persistTrack])
 
+  useEffect(() => {
+    if (!libraryReady) return
+    const missing = tracks.filter(
+      (t) =>
+        albumBackfillQueueRef.current.has(t.id) &&
+        !albumBackfillAttemptedRef.current.has(t.id),
+    )
+    if (missing.length === 0) return
+
+    let cancelled = false
+    missing.forEach((t) => albumBackfillAttemptedRef.current.add(t.id))
+
+    ;(async () => {
+      await mapWithConcurrency(missing, METADATA_CONCURRENCY, async (track) => {
+        if (cancelled) return
+        await parseTrackMetadata(track)
+        albumBackfillQueueRef.current.delete(track.id)
+      })
+    })()
+
+    return () => {
+      cancelled = true
+    }
+  }, [libraryReady, tracks, parseTrackMetadata])
+
   return {
     tracks,
     playlists,
@@ -330,6 +394,7 @@ export function useMusicLibrary({ registerUrl, revokeUrl }) {
     addTrackToPlaylist,
     removeTrackFromPlaylist,
     toggleFavorite,
+    updateTrackMetadata,
     clearLibrary,
   }
 }
