@@ -25,6 +25,7 @@ function makeTrackRecord(id, title = 'Song') {
     audioBlob: blob,
     title,
     artist: 'Artist',
+    album: 'Unknown album',
     duration: 180,
     coverBlob: null,
     coverMime: null,

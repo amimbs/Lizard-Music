@@ -132,6 +132,7 @@ export function trackToRecord(track) {
     audioBlob: track.file,
     title: track.title,
     artist: track.artist,
+    album: track.album ?? 'Unknown album',
     duration: track.duration,
     coverBlob: track.coverBlob ?? null,
     coverMime: track.coverMime ?? null,

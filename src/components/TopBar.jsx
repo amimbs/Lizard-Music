@@ -5,6 +5,8 @@ import { isLightTheme } from '../themes.js'
 
 const LIBRARY_VIEWS = [
   { id: 'songs', label: 'Songs' },
+  { id: 'albums', label: 'Albums' },
+  { id: 'artists', label: 'Artists' },
   { id: 'recent', label: 'Recently Added' },
   { id: 'favorites', label: 'Favorites' },
   { id: 'playlists', label: 'Playlists' },
@@ -14,9 +16,15 @@ export function TopBar({
   view,
   setView,
   setSelectedPlaylistId,
+  setSelectedAlbumKey,
+  setSelectedArtist,
+  setSelectedArtistAlbum,
   search,
   setSearch,
   selectedPlaylistId,
+  selectedAlbumKey,
+  selectedArtist,
+  selectedArtistAlbum,
   fileInputRef,
   folderInputRef,
   onAddFiles,
@@ -26,7 +34,15 @@ export function TopBar({
   onThemeChange,
 }) {
   const handleViewChange = (nextView) => {
-    switchView(setView, setSelectedPlaylistId, setSearch, nextView)
+    switchView({
+      setView,
+      setSelectedPlaylistId,
+      setSelectedAlbumKey,
+      setSelectedArtist,
+      setSelectedArtistAlbum,
+      setSearch,
+      nextView,
+    })
   }
 
   const handleFileChange = (e) => {
@@ -82,7 +98,12 @@ export function TopBar({
         <IconSearch />
         <input
           type="text"
-          placeholder={getSearchPlaceholder(view, selectedPlaylistId)}
+          placeholder={getSearchPlaceholder(view, {
+            selectedPlaylistId,
+            selectedAlbumKey,
+            selectedArtist,
+            selectedArtistAlbum,
+          })}
           value={search}
           onChange={(e) => setSearch(e.target.value)}
         />

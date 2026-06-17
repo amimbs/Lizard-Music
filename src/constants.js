@@ -18,6 +18,8 @@ export const RECENT_MS = 7 * 24 * 60 * 60 * 1000
 
 export const VIEW_TITLES = {
   songs: 'Songs',
+  albums: 'Albums',
+  artists: 'Artists',
   recent: 'Recently Added',
   favorites: 'Favorites',
   playlists: 'Playlists',

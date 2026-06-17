@@ -66,10 +66,20 @@ export default function App() {
     setView,
     selectedPlaylistId,
     setSelectedPlaylistId,
+    selectedAlbumKey,
+    setSelectedAlbumKey,
+    selectedArtist,
+    setSelectedArtist,
+    selectedArtistAlbum,
+    setSelectedArtistAlbum,
     selectedPlaylist,
     displayedPlaylists,
+    displayedAlbumGroups,
+    displayedArtistGroups,
+    displayedArtistAlbums,
     displayed,
     playOrder,
+    trackListPageTitle,
     hasTracks,
     recentEmpty,
     favoritesEmpty,
@@ -206,7 +216,15 @@ export default function App() {
     setClearLibraryStep(null)
     setCurrentIndex(-1)
     setIsPlaying(false)
-    switchView(setView, setSelectedPlaylistId, setSearch, 'songs')
+    switchView({
+      setView,
+      setSelectedPlaylistId,
+      setSelectedAlbumKey,
+      setSelectedArtist,
+      setSelectedArtistAlbum,
+      setSearch,
+      nextView: 'songs',
+    })
     setDeleteConfirm(null)
     setDeletePlaylistConfirmId(null)
     setAddToPlaylistTrackId(null)
@@ -222,6 +240,9 @@ export default function App() {
     setIsPlaying,
     setView,
     setSelectedPlaylistId,
+    setSelectedAlbumKey,
+    setSelectedArtist,
+    setSelectedArtistAlbum,
     setSearch,
     audioRef,
   ])
@@ -253,9 +274,15 @@ export default function App() {
         view={view}
         setView={setView}
         setSelectedPlaylistId={setSelectedPlaylistId}
+        setSelectedAlbumKey={setSelectedAlbumKey}
+        setSelectedArtist={setSelectedArtist}
+        setSelectedArtistAlbum={setSelectedArtistAlbum}
         search={search}
         setSearch={setSearch}
         selectedPlaylistId={selectedPlaylistId}
+        selectedAlbumKey={selectedAlbumKey}
+        selectedArtist={selectedArtist}
+        selectedArtistAlbum={selectedArtistAlbum}
         fileInputRef={fileInputRef}
         folderInputRef={folderInputRef}
         onAddFiles={handleAddFiles}
@@ -273,10 +300,17 @@ export default function App() {
         libraryReady={libraryReady}
         view={view}
         selectedPlaylistId={selectedPlaylistId}
+        selectedAlbumKey={selectedAlbumKey}
+        selectedArtist={selectedArtist}
+        selectedArtistAlbum={selectedArtistAlbum}
         selectedPlaylist={selectedPlaylist}
         displayedPlaylists={displayedPlaylists}
+        displayedAlbumGroups={displayedAlbumGroups}
+        displayedArtistGroups={displayedArtistGroups}
+        displayedArtistAlbums={displayedArtistAlbums}
         displayed={displayed}
         search={search}
+        trackListPageTitle={trackListPageTitle}
         hasTracks={hasTracks}
         recentEmpty={recentEmpty}
         favoritesEmpty={favoritesEmpty}
@@ -286,6 +320,12 @@ export default function App() {
         onCreatePlaylist={handleCreatePlaylist}
         onOpenPlaylist={setSelectedPlaylistId}
         onDeletePlaylist={handleDeletePlaylist}
+        onOpenAlbum={setSelectedAlbumKey}
+        onOpenArtist={setSelectedArtist}
+        onOpenArtistAlbum={setSelectedArtistAlbum}
+        onBackFromAlbum={() => setSelectedAlbumKey(null)}
+        onBackFromArtistAlbums={() => setSelectedArtist(null)}
+        onBackFromArtistAlbum={() => setSelectedArtistAlbum(null)}
         onPickFiles={pickFiles}
         onPickFolder={pickFolder}
         onBackToPlaylists={() => setSelectedPlaylistId(null)}

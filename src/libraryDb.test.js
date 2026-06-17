@@ -34,6 +34,7 @@ describe('trackToRecord', () => {
       file,
       title: 'Song Title',
       artist: 'Artist Name',
+      album: 'Album Name',
       duration: 180,
       coverBlob,
       coverMime: 'image/jpeg',
@@ -48,6 +49,7 @@ describe('trackToRecord', () => {
       audioBlob: file,
       title: 'Song Title',
       artist: 'Artist Name',
+      album: 'Album Name',
       duration: 180,
       coverBlob,
       coverMime: 'image/jpeg',
@@ -68,6 +70,7 @@ describe('trackToRecord', () => {
     })
 
     expect(record.mimeType).toBe('audio/mpeg')
+    expect(record.album).toBe('Unknown album')
     expect(record.coverBlob).toBeNull()
     expect(record.coverMime).toBeNull()
     expect(record.addedAt).toBe(Date.parse('2026-01-15T12:00:00Z'))
