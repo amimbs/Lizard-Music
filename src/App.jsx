@@ -110,7 +110,6 @@ export default function App() {
     next,
     prev,
     seekTo,
-    stop,
     cycleRepeat,
     onTimeUpdate,
     onLoadedMetadata,
@@ -257,14 +256,12 @@ export default function App() {
 
   useMediaSession({
     currentTrack,
-    isPlaying,
     progress,
     duration,
     setIsPlaying,
     next,
     prev,
     seekTo,
-    onStop: stop,
   })
 
   useKeyboardShortcuts({ togglePlay, next, prev })

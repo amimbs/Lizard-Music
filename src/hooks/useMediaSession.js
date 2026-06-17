@@ -1,25 +1,11 @@
 import { useEffect } from 'react'
 
-function mediaSessionTitle(track) {
-  return track.favorite ? `♥ ${track.title}` : track.title
-}
-
-export function useMediaSession({
-  currentTrack,
-  isPlaying,
-  progress,
-  duration,
-  setIsPlaying,
-  next,
-  prev,
-  seekTo,
-  onStop,
-}) {
+export function useMediaSession({ currentTrack, progress, duration, setIsPlaying, next, prev, seekTo }) {
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack) return
 
     navigator.mediaSession.metadata = new window.MediaMetadata({
-      title: mediaSessionTitle(currentTrack),
+      title: currentTrack.title,
       artist: currentTrack.artist,
       artwork: currentTrack.cover ? [{ src: currentTrack.cover }] : [],
     })
@@ -31,11 +17,6 @@ export function useMediaSession({
     navigator.mediaSession.setActionHandler('seekto', (details) => {
       if (details.seekTime != null) seekTo(details.seekTime)
     })
-    navigator.mediaSession.setActionHandler('stop', () => {
-      onStop()
-      navigator.mediaSession.playbackState = 'none'
-      navigator.mediaSession.metadata = null
-    })
 
     return () => {
       navigator.mediaSession.setActionHandler('play', null)
@@ -43,18 +24,8 @@ export function useMediaSession({
       navigator.mediaSession.setActionHandler('nexttrack', null)
       navigator.mediaSession.setActionHandler('previoustrack', null)
       navigator.mediaSession.setActionHandler('seekto', null)
-      navigator.mediaSession.setActionHandler('stop', null)
     }
-  }, [currentTrack, next, prev, seekTo, setIsPlaying, onStop])
-
-  useEffect(() => {
-    if (!('mediaSession' in navigator)) return
-    if (!currentTrack) {
-      navigator.mediaSession.playbackState = 'none'
-      return
-    }
-    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused'
-  }, [currentTrack, isPlaying])
+  }, [currentTrack, next, prev, seekTo, setIsPlaying])
 
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack || !duration) return
