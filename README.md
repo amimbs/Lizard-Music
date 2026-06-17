@@ -14,7 +14,7 @@ Install it on Android as a PWA for a native-like experience with lock-screen con
 - Live search across your library
 - Album art with an animated "now playing" indicator
 - OS media-key support (play/pause/next/prev) and keyboard shortcuts
-- Lock-screen controls on Android via Media Session API
+- Lock-screen controls on Android via Media Session API (favorite tracks show a ♥ in the title; system close stops playback and dismisses the notification)
 - Installable PWA for Android (add to home screen)
 - Library persists locally between sessions (IndexedDB)
 - Virtualized playlist for smooth scrolling with large libraries

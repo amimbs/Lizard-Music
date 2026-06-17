@@ -1,11 +1,25 @@
 import { useEffect } from 'react'
 
-export function useMediaSession({ currentTrack, progress, duration, setIsPlaying, next, prev, seekTo }) {
+function mediaSessionTitle(track) {
+  return track.favorite ? `♥ ${track.title}` : track.title
+}
+
+export function useMediaSession({
+  currentTrack,
+  isPlaying,
+  progress,
+  duration,
+  setIsPlaying,
+  next,
+  prev,
+  seekTo,
+  onStop,
+}) {
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack) return
 
     navigator.mediaSession.metadata = new window.MediaMetadata({
-      title: currentTrack.title,
+      title: mediaSessionTitle(currentTrack),
       artist: currentTrack.artist,
       artwork: currentTrack.cover ? [{ src: currentTrack.cover }] : [],
     })
@@ -17,6 +31,11 @@ export function useMediaSession({ currentTrack, progress, duration, setIsPlaying
     navigator.mediaSession.setActionHandler('seekto', (details) => {
       if (details.seekTime != null) seekTo(details.seekTime)
     })
+    navigator.mediaSession.setActionHandler('stop', () => {
+      onStop()
+      navigator.mediaSession.playbackState = 'none'
+      navigator.mediaSession.metadata = null
+    })
 
     return () => {
       navigator.mediaSession.setActionHandler('play', null)
@@ -24,8 +43,18 @@ export function useMediaSession({ currentTrack, progress, duration, setIsPlaying
       navigator.mediaSession.setActionHandler('nexttrack', null)
       navigator.mediaSession.setActionHandler('previoustrack', null)
       navigator.mediaSession.setActionHandler('seekto', null)
+      navigator.mediaSession.setActionHandler('stop', null)
     }
-  }, [currentTrack, next, prev, seekTo, setIsPlaying])
+  }, [currentTrack, next, prev, seekTo, setIsPlaying, onStop])
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return
+    if (!currentTrack) {
+      navigator.mediaSession.playbackState = 'none'
+      return
+    }
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused'
+  }, [currentTrack, isPlaying])
 
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack || !duration) return

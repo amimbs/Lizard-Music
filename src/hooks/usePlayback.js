@@ -100,6 +100,19 @@ export function usePlayback({ tracks, playOrder }) {
     setProgress(time)
   }, [])
 
+  const stop = useCallback(() => {
+    setIsPlaying(false)
+    setCurrentIndex(-1)
+    setProgress(0)
+    setDuration(0)
+    const a = audioRef.current
+    if (a) {
+      a.pause()
+      a.removeAttribute('src')
+      a.load()
+    }
+  }, [])
+
   const cycleRepeat = useCallback(() => {
     setRepeat((r) => (r === 'off' ? 'all' : r === 'all' ? 'one' : 'off'))
   }, [])
@@ -181,6 +194,7 @@ export function usePlayback({ tracks, playOrder }) {
     next,
     prev,
     seekTo,
+    stop,
     cycleRepeat,
     onTimeUpdate,
     onLoadedMetadata,
