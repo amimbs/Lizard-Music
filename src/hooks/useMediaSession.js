@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
 
-export function useMediaSession({ currentTrack, progress, duration, setIsPlaying, next, prev, seekTo }) {
+export function useMediaSession({ currentTrack, isPlaying, progress, duration, setIsPlaying, next, prev, seekTo }) {
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack) return
 
@@ -26,6 +26,11 @@ export function useMediaSession({ currentTrack, progress, duration, setIsPlaying
       navigator.mediaSession.setActionHandler('seekto', null)
     }
   }, [currentTrack, next, prev, seekTo, setIsPlaying])
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator)) return
+    navigator.mediaSession.playbackState = isPlaying ? 'playing' : 'paused'
+  }, [isPlaying, currentTrack])
 
   useEffect(() => {
     if (!('mediaSession' in navigator) || !currentTrack || !duration) return

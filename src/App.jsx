@@ -256,6 +256,7 @@ export default function App() {
 
   useMediaSession({
     currentTrack,
+    isPlaying,
     progress,
     duration,
     setIsPlaying,

@@ -145,6 +145,28 @@ export function usePlayback({ tracks, playOrder }) {
     if (a) a.volume = muted ? 0 : volume
   }, [volume, muted])
 
+  // Reconcile React state with the audio element's actual state. The browser or
+  // OS can pause playback on its own (e.g. when a locked device enters deep
+  // sleep). Without this, `isPlaying` stays true while audio is silent, leaving
+  // the UI (play button, equalizer, progress bar) out of sync with reality.
+  useEffect(() => {
+    const a = audioRef.current
+    if (!a) return
+    const handlePlay = () => setIsPlaying(true)
+    const handlePause = () => {
+      // A natural track end also pauses the element, but that case is handled by
+      // the `ended` event advancing to the next track, so ignore it here.
+      if (a.ended) return
+      setIsPlaying(false)
+    }
+    a.addEventListener('play', handlePlay)
+    a.addEventListener('pause', handlePause)
+    return () => {
+      a.removeEventListener('play', handlePlay)
+      a.removeEventListener('pause', handlePause)
+    }
+  }, [])
+
   const playbackControls = useMemo(
     () => ({
       currentIndex,
