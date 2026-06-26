@@ -145,6 +145,16 @@ export function usePlayback({ tracks, playOrder }) {
     if (a) a.volume = muted ? 0 : volume
   }, [volume, muted])
 
+  // Loop a single track natively rather than restarting it from JS on `ended`.
+  // While the device is locked and the screen is dark, JS execution is throttled
+  // and a fresh `play()` call is unreliable and tears down the lock-screen media
+  // session. Native looping is handled by the media layer, so repeat-one keeps
+  // playing seamlessly in the background and the media controls stay alive.
+  useEffect(() => {
+    const a = audioRef.current
+    if (a) a.loop = repeat === 'one'
+  }, [repeat, currentTrack])
+
   // Reconcile React state with the audio element's actual state. The browser or
   // OS can pause playback on its own (e.g. when a locked device enters deep
   // sleep). Without this, `isPlaying` stays true while audio is silent, leaving
