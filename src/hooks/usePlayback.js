@@ -15,6 +15,7 @@ export function usePlayback({ tracks, playOrder }) {
   const shuffleOrderRef = useRef([])
 
   const currentTrack = currentIndex >= 0 ? tracks[currentIndex] : null
+  const trackUrl = currentTrack?.url ?? null
 
   const playIndex = useCallback((index) => {
     setCurrentIndex(index)
@@ -114,6 +115,14 @@ export function usePlayback({ tracks, playOrder }) {
     if (a) setDuration(a.duration)
   }, [])
 
+  const onPlay = useCallback(() => {
+    setIsPlaying(true)
+  }, [])
+
+  const onPause = useCallback(() => {
+    setIsPlaying(false)
+  }, [])
+
   const onSeek = useCallback(
     (e) => {
       seekTo(Number(e.target.value))
@@ -129,16 +138,29 @@ export function usePlayback({ tracks, playOrder }) {
 
   useEffect(() => {
     const a = audioRef.current
-    if (!a || !currentTrack) return
-    if (a.src !== currentTrack.url) {
-      a.src = currentTrack.url
+    if (!a) return
+    if (!trackUrl) {
+      if (a.src) {
+        a.pause()
+        a.removeAttribute('src')
+        a.load()
+      }
+      return
     }
+    if (a.src !== trackUrl) {
+      a.src = trackUrl
+    }
+  }, [trackUrl])
+
+  useEffect(() => {
+    const a = audioRef.current
+    if (!a || !trackUrl) return
     if (isPlaying) {
       a.play().catch(() => setIsPlaying(false))
     } else {
       a.pause()
     }
-  }, [currentTrack, isPlaying])
+  }, [trackUrl, isPlaying])
 
   useEffect(() => {
     const a = audioRef.current
@@ -184,6 +206,8 @@ export function usePlayback({ tracks, playOrder }) {
     cycleRepeat,
     onTimeUpdate,
     onLoadedMetadata,
+    onPlay,
+    onPause,
     onSeek,
     playbackControls,
   }

@@ -113,6 +113,8 @@ export default function App() {
     cycleRepeat,
     onTimeUpdate,
     onLoadedMetadata,
+    onPlay,
+    onPause,
     onSeek,
     playbackControls,
   } = usePlayback({ tracks, playOrder })
@@ -256,6 +258,7 @@ export default function App() {
 
   useMediaSession({
     currentTrack,
+    isPlaying,
     progress,
     duration,
     setIsPlaying,
@@ -373,6 +376,8 @@ export default function App() {
         ref={audioRef}
         onTimeUpdate={onTimeUpdate}
         onLoadedMetadata={onLoadedMetadata}
+        onPlay={onPlay}
+        onPause={onPause}
         onEnded={() => next(true)}
       />
 

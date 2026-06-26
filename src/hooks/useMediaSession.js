@@ -1,13 +1,18 @@
 import { useEffect } from 'react'
 
-export function useMediaSession({ currentTrack, progress, duration, setIsPlaying, next, prev, seekTo }) {
+export function useMediaSession({ currentTrack, isPlaying, progress, duration, setIsPlaying, next, prev, seekTo }) {
+  const trackId = currentTrack?.id
+  const trackTitle = currentTrack?.title
+  const trackArtist = currentTrack?.artist
+  const trackCover = currentTrack?.cover
+
   useEffect(() => {
-    if (!('mediaSession' in navigator) || !currentTrack) return
+    if (!('mediaSession' in navigator) || !trackId) return
 
     navigator.mediaSession.metadata = new window.MediaMetadata({
-      title: currentTrack.title,
-      artist: currentTrack.artist,
-      artwork: currentTrack.cover ? [{ src: currentTrack.cover }] : [],
+      title: trackTitle,
+      artist: trackArtist,
+      artwork: trackCover ? [{ src: trackCover }] : [],
     })
 
     navigator.mediaSession.setActionHandler('play', () => setIsPlaying(true))
@@ -25,10 +30,15 @@ export function useMediaSession({ currentTrack, progress, duration, setIsPlaying
       navigator.mediaSession.setActionHandler('previoustrack', null)
       navigator.mediaSession.setActionHandler('seekto', null)
     }
-  }, [currentTrack, next, prev, seekTo, setIsPlaying])
+  }, [trackId, trackTitle, trackArtist, trackCover, next, prev, seekTo, setIsPlaying])
 
   useEffect(() => {
-    if (!('mediaSession' in navigator) || !currentTrack || !duration) return
+    if (!('mediaSession' in navigator)) return
+    navigator.mediaSession.playbackState = !trackId ? 'none' : isPlaying ? 'playing' : 'paused'
+  }, [trackId, isPlaying])
+
+  useEffect(() => {
+    if (!('mediaSession' in navigator) || !trackId || !duration) return
     try {
       navigator.mediaSession.setPositionState({
         duration,
@@ -38,5 +48,5 @@ export function useMediaSession({ currentTrack, progress, duration, setIsPlaying
     } catch {
       // setPositionState not supported in this browser.
     }
-  }, [currentTrack, progress, duration])
+  }, [trackId, progress, duration])
 }
