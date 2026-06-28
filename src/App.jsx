@@ -143,6 +143,17 @@ export default function App() {
     [editTrackId, tracks],
   )
 
+  const closeEditTrack = useCallback(() => setEditTrackId(null), [])
+
+  const saveEditTrack = useCallback(
+    async (fields) => {
+      if (!editTrackId) return
+      await updateTrackMetadata(editTrackId, fields)
+      setEditTrackId(null)
+    },
+    [editTrackId, updateTrackMetadata],
+  )
+
   const handleAddFiles = useCallback(
     async (fileList) => {
       await addFiles(fileList)
@@ -399,11 +410,8 @@ export default function App() {
       {editTrack && (
         <EditTrackModal
           track={editTrack}
-          onSave={async (fields) => {
-            await updateTrackMetadata(editTrack.id, fields)
-            setEditTrackId(null)
-          }}
-          onClose={() => setEditTrackId(null)}
+          onSave={saveEditTrack}
+          onClose={closeEditTrack}
         />
       )}
 

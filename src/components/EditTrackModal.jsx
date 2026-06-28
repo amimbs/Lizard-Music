@@ -6,23 +6,24 @@ export function EditTrackModal({ track, onSave, onClose }) {
   const [album, setAlbum] = useState(track.album)
   const dialogRef = useRef(null)
   const titleRef = useRef(null)
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
 
   useEffect(() => {
-    const dialog = dialogRef.current
-    if (!dialog) return
-
     titleRef.current?.focus()
+  }, [])
 
+  useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         e.preventDefault()
-        onClose()
+        onCloseRef.current()
       }
     }
 
     document.addEventListener('keydown', handleKeyDown)
     return () => document.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [])
 
   const handleSubmit = (e) => {
     e.preventDefault()
