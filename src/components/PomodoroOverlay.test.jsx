@@ -14,6 +14,7 @@ describe('PomodoroOverlay', () => {
     longRestFrequency: DEFAULT_LONG_REST_FREQUENCY,
     completedCycles: 0,
     selectedTimerType: 'pomodoro',
+    pendingNextPhase: null,
     goalComplete: false,
     theme: 'original',
     onDurationsChange: vi.fn(),
@@ -271,5 +272,52 @@ describe('PomodoroOverlay', () => {
 
     await user.keyboard('{Escape}')
     expect(onClose).toHaveBeenCalledOnce()
+  })
+
+  it('shows pending next timer when idle with pendingNextPhase', () => {
+    render(
+      <PomodoroOverlay {...defaultProps} pendingNextPhase="shortRest" selectedTimerType="pomodoro" />,
+    )
+
+    expect(screen.getByText('Next: Short rest')).toBeInTheDocument()
+  })
+
+  it('shows Start button label for pending timer', () => {
+    render(
+      <PomodoroOverlay {...defaultProps} pendingNextPhase="longRest" selectedTimerType="pomodoro" />,
+    )
+
+    expect(screen.getByRole('button', { name: 'Start Long Rest' })).toBeInTheDocument()
+  })
+
+  it('reflects pending timer type in radio selection', () => {
+    render(
+      <PomodoroOverlay {...defaultProps} pendingNextPhase="shortRest" selectedTimerType="pomodoro" />,
+    )
+
+    expect(screen.getByRole('radio', { name: 'Short rest' })).toBeChecked()
+    expect(screen.getByRole('radio', { name: 'Pomodoro' })).not.toBeChecked()
+  })
+
+  it('disables timer type switching while pending', () => {
+    render(
+      <PomodoroOverlay {...defaultProps} pendingNextPhase="shortRest" selectedTimerType="pomodoro" />,
+    )
+
+    expect(screen.getByRole('radio', { name: 'Pomodoro' })).toBeDisabled()
+    expect(screen.getByRole('radio', { name: 'Long rest' })).toBeDisabled()
+  })
+
+  it('shows progress bullets matching completedCycles after popup decline', () => {
+    render(
+      <PomodoroOverlay
+        {...defaultProps}
+        pendingNextPhase="pomodoro"
+        completedCycles={2}
+        dailyGoal={3}
+      />,
+    )
+
+    expect(screen.getByLabelText('2 of 3 cycles completed')).toHaveTextContent('● ● ○')
   })
 })

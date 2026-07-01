@@ -5,6 +5,7 @@ export function PomodoroNotificationLayer({
   formOpen,
   goalComplete,
   pendingNextPhase,
+  completionPopupDismissed,
   dailyGoal,
   theme,
   onConfirmPending,
@@ -21,7 +22,7 @@ export function PomodoroNotificationLayer({
     )
   }
 
-  if (pendingNextPhase && !goalComplete && !formOpen) {
+  if (pendingNextPhase && !completionPopupDismissed && !goalComplete && !formOpen) {
     return (
       <PomodoroCompletionPopup
         nextPhase={pendingNextPhase}

@@ -103,8 +103,28 @@ const NEXT_TIMER_PROMPTS = {
   longRest: 'Start Long Rest?',
 }
 
+const NEXT_TIMER_LABELS = {
+  pomodoro: 'Pomodoro',
+  shortRest: 'Short rest',
+  longRest: 'Long rest',
+}
+
+const NEXT_TIMER_ACTION_LABELS = {
+  pomodoro: 'Start Pomodoro',
+  shortRest: 'Start Short Rest',
+  longRest: 'Start Long Rest',
+}
+
 export function getNextTimerPrompt(phase) {
   return NEXT_TIMER_PROMPTS[phase] ?? 'Start timer?'
+}
+
+export function getNextTimerLabel(phase) {
+  return NEXT_TIMER_LABELS[phase] ?? 'Timer'
+}
+
+export function getNextTimerActionLabel(phase) {
+  return NEXT_TIMER_ACTION_LABELS[phase] ?? 'Start'
 }
 
 export function formatCycleBullets(completed, goal) {

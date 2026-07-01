@@ -8,6 +8,7 @@ describe('PomodoroNotificationLayer', () => {
     formOpen: false,
     goalComplete: false,
     pendingNextPhase: null,
+    completionPopupDismissed: false,
     dailyGoal: 4,
     theme: 'original',
     onConfirmPending: vi.fn(),
@@ -81,5 +82,29 @@ describe('PomodoroNotificationLayer', () => {
     const { container } = render(<PomodoroNotificationLayer {...defaultProps} />)
 
     expect(container).toBeEmptyDOMElement()
+  })
+
+  it('hides completion popup when completionPopupDismissed is true', () => {
+    render(
+      <PomodoroNotificationLayer
+        {...defaultProps}
+        pendingNextPhase="shortRest"
+        completionPopupDismissed
+      />,
+    )
+
+    expect(screen.queryByText('Start Short Rest?')).not.toBeInTheDocument()
+  })
+
+  it('shows completion popup when pending and not dismissed', () => {
+    render(
+      <PomodoroNotificationLayer
+        {...defaultProps}
+        pendingNextPhase="shortRest"
+        completionPopupDismissed={false}
+      />,
+    )
+
+    expect(screen.getByText('Start Short Rest?')).toBeInTheDocument()
   })
 })

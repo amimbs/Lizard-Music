@@ -16,6 +16,8 @@ import {
   DAILY_GOAL_MAX,
   validateLongRestFrequency,
   getNextTimerPrompt,
+  getNextTimerLabel,
+  getNextTimerActionLabel,
   LONG_REST_FREQUENCY_MIN,
   LONG_REST_FREQUENCY_MAX,
 } from './pomodoroValidation.js'
@@ -100,6 +102,22 @@ describe('getNextTimerPrompt', () => {
     expect(getNextTimerPrompt('pomodoro')).toBe('Start Pomodoro?')
     expect(getNextTimerPrompt('shortRest')).toBe('Start Short Rest?')
     expect(getNextTimerPrompt('longRest')).toBe('Start Long Rest?')
+  })
+})
+
+describe('getNextTimerLabel', () => {
+  it('returns the correct label for each phase', () => {
+    expect(getNextTimerLabel('pomodoro')).toBe('Pomodoro')
+    expect(getNextTimerLabel('shortRest')).toBe('Short rest')
+    expect(getNextTimerLabel('longRest')).toBe('Long rest')
+  })
+})
+
+describe('getNextTimerActionLabel', () => {
+  it('returns the correct action label for each phase', () => {
+    expect(getNextTimerActionLabel('pomodoro')).toBe('Start Pomodoro')
+    expect(getNextTimerActionLabel('shortRest')).toBe('Start Short Rest')
+    expect(getNextTimerActionLabel('longRest')).toBe('Start Long Rest')
   })
 })
 

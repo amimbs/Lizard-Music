@@ -13,6 +13,8 @@ import {
   validateDailyGoal,
   validateLongRestFrequency,
   formatCycleBullets,
+  getNextTimerLabel,
+  getNextTimerActionLabel,
 } from '../utils/pomodoroValidation.js'
 
 const PHASE_LABELS = {
@@ -37,6 +39,7 @@ export function PomodoroOverlay({
   longRestFrequency,
   completedCycles,
   selectedTimerType,
+  pendingNextPhase,
   goalComplete,
   theme,
   onDurationsChange,
@@ -79,7 +82,9 @@ export function PomodoroOverlay({
 
   const isIdle = phase === 'idle'
   const canEditSettings = isIdle && !goalComplete
-  const canSwitchTimerType = isIdle && !goalComplete
+  const canSwitchTimerType = isIdle && !goalComplete && !pendingNextPhase
+  const effectiveTimerType = pendingNextPhase ?? selectedTimerType
+  const startLabel = pendingNextPhase ? getNextTimerActionLabel(pendingNextPhase) : 'Start'
   const validation = validateAllDurations(localDurations)
   const dailyGoalValid = validateDailyGoal(localDailyGoal)
   const longRestFrequencyValid = validateLongRestFrequency(localLongRestFrequency)
@@ -168,6 +173,12 @@ export function PomodoroOverlay({
               </div>
             )}
 
+            {isIdle && pendingNextPhase && (
+              <p className="pomodoro-pending-next" aria-live="polite">
+                Next: {getNextTimerLabel(pendingNextPhase)}
+              </p>
+            )}
+
             <fieldset className="pomodoro-timer-type" disabled={!canSwitchTimerType}>
               <legend className="modal-field-label">Timer type</legend>
               {TIMER_TYPES.map(({ id, label }) => (
@@ -176,7 +187,7 @@ export function PomodoroOverlay({
                     type="radio"
                     name="timer-type"
                     value={id}
-                    checked={selectedTimerType === id}
+                    checked={effectiveTimerType === id}
                     onChange={() => onTimerTypeChange(id)}
                     disabled={!canSwitchTimerType}
                   />
@@ -312,7 +323,7 @@ export function PomodoroOverlay({
                     Cancel
                   </button>
                   <button type="submit" className="btn primary" disabled={!formValid}>
-                    Start
+                    {startLabel}
                   </button>
                 </div>
               )}

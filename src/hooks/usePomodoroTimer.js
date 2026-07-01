@@ -22,6 +22,7 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
   const [selectedTimerType, setSelectedTimerTypeState] = useState('pomodoro')
   const [goalComplete, setGoalComplete] = useState(false)
   const [pendingNextPhase, setPendingNextPhase] = useState(null)
+  const [completionPopupDismissed, setCompletionPopupDismissed] = useState(false)
   const [durations, setDurationsState] = useState({ ...DEFAULT_DURATIONS })
 
   const intervalRef = useRef(null)
@@ -36,6 +37,7 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
   const selectedTimerTypeRef = useRef(selectedTimerType)
   const pomodoroCompletedBeforeRestRef = useRef(false)
   const pendingNextPhaseRef = useRef(null)
+  const completionPopupDismissedRef = useRef(false)
 
   onChimeRef.current = onChime
   isFormOpenRefInternal.current = isFormOpenRef?.current ?? true
@@ -47,6 +49,7 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
   isPausedRef.current = isPaused
   selectedTimerTypeRef.current = selectedTimerType
   pendingNextPhaseRef.current = pendingNextPhase
+  completionPopupDismissedRef.current = completionPopupDismissed
 
   const clearTimer = useCallback(() => {
     if (intervalRef.current !== null) {
@@ -88,16 +91,33 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
     setRemainingSeconds(0)
   }, [clearTimer])
 
+  const clearPendingState = useCallback(() => {
+    pendingNextPhaseRef.current = null
+    completionPopupDismissedRef.current = false
+    setPendingNextPhase(null)
+    setCompletionPopupDismissed(false)
+  }, [])
+
+  const setPendingPhase = useCallback((nextPhase) => {
+    pendingNextPhaseRef.current = nextPhase
+    completionPopupDismissedRef.current = false
+    selectedTimerTypeRef.current = nextPhase
+    setPendingNextPhase(nextPhase)
+    setCompletionPopupDismissed(false)
+    setSelectedTimerTypeState(nextPhase)
+  }, [])
+
   const checkGoalComplete = useCallback(
     (nextCompletedCycles) => {
       if (nextCompletedCycles >= dailyGoalRef.current) {
         goIdle()
+        clearPendingState()
         setGoalComplete(true)
         return true
       }
       return false
     },
-    [goIdle],
+    [goIdle, clearPendingState],
   )
 
   const incrementCompletedCycle = useCallback(() => {
@@ -145,8 +165,7 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
         if (formOpen) {
           beginCountdown(restPhase, durationToSeconds(restDuration))
         } else {
-          pendingNextPhaseRef.current = restPhase
-          setPendingNextPhase(restPhase)
+          setPendingPhase(restPhase)
           goIdle()
         }
         return
@@ -159,13 +178,12 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
         if (formOpen) {
           goIdle()
         } else {
-          pendingNextPhaseRef.current = 'pomodoro'
-          setPendingNextPhase('pomodoro')
+          setPendingPhase('pomodoro')
           goIdle()
         }
       }
     },
-    [beginCountdown, goIdle, handleRestComplete, isFormOpenRef],
+    [beginCountdown, goIdle, handleRestComplete, isFormOpenRef, setPendingPhase],
   )
 
   useEffect(() => {
@@ -210,24 +228,34 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
 
   const setSelectedTimerType = useCallback(
     (type) => {
-      if (phase !== 'idle') return
+      if (phase !== 'idle' || pendingNextPhaseRef.current) return
       selectedTimerTypeRef.current = type
       setSelectedTimerTypeState(type)
     },
     [phase],
   )
 
+  const startPendingOrSelected = useCallback(
+    (timerType) => {
+      if (timerType === 'pomodoro') {
+        pomodoroCompletedBeforeRestRef.current = false
+      }
+      clearPendingState()
+      beginCountdown(timerType, durationToSeconds(durationsRef.current[timerType]))
+    },
+    [beginCountdown, clearPendingState],
+  )
+
   const start = useCallback(() => {
     if (phase !== 'idle' || goalComplete) return
     const currentDurations = durationsRef.current
-    const timerType = selectedTimerTypeRef.current
+    const timerType = pendingNextPhaseRef.current ?? selectedTimerTypeRef.current
     const { valid } = validateAllDurations(currentDurations)
     if (!valid) return
     if (!validateDailyGoal(dailyGoalRef.current)) return
     if (!validateLongRestFrequency(longRestFrequencyRef.current)) return
-    pomodoroCompletedBeforeRestRef.current = false
-    beginCountdown(timerType, durationToSeconds(currentDurations[timerType]))
-  }, [phase, goalComplete, beginCountdown])
+    startPendingOrSelected(timerType)
+  }, [phase, goalComplete, startPendingOrSelected])
 
   const pause = useCallback(() => {
     if (phase === 'idle' || isPaused) return
@@ -248,23 +276,20 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
     setIsPaused(false)
     isPausedRef.current = false
     pomodoroCompletedBeforeRestRef.current = false
-    pendingNextPhaseRef.current = null
-    setPendingNextPhase(null)
+    clearPendingState()
     setPhase('idle')
     setRemainingSeconds(0)
-  }, [clearTimer])
+  }, [clearTimer, clearPendingState])
 
   const confirmPendingNext = useCallback(() => {
     const nextPhase = pendingNextPhaseRef.current
     if (!nextPhase || phase !== 'idle' || goalComplete) return
-    pendingNextPhaseRef.current = null
-    setPendingNextPhase(null)
-    beginCountdown(nextPhase, durationToSeconds(durationsRef.current[nextPhase]))
-  }, [phase, goalComplete, beginCountdown])
+    startPendingOrSelected(nextPhase)
+  }, [phase, goalComplete, startPendingOrSelected])
 
   const dismissPendingNext = useCallback(() => {
-    pendingNextPhaseRef.current = null
-    setPendingNextPhase(null)
+    completionPopupDismissedRef.current = true
+    setCompletionPopupDismissed(true)
   }, [])
 
   const dismissGoalComplete = useCallback(() => {
@@ -276,7 +301,7 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
     completedCyclesRef.current = 0
     dailyGoalRef.current = DEFAULT_DAILY_GOAL
     longRestFrequencyRef.current = DEFAULT_LONG_REST_FREQUENCY
-    pendingNextPhaseRef.current = null
+    clearPendingState()
     setPhase('idle')
     setRemainingSeconds(0)
     setPomodoroCount(0)
@@ -285,9 +310,8 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
     setLongRestFrequencyState(DEFAULT_LONG_REST_FREQUENCY)
     setSelectedTimerTypeState('pomodoro')
     setGoalComplete(false)
-    setPendingNextPhase(null)
     setDurationsState({ ...DEFAULT_DURATIONS })
-  }, [clearTimer])
+  }, [clearTimer, clearPendingState])
 
   return {
     phase,
@@ -300,6 +324,7 @@ export function usePomodoroTimer({ onChime, isFormOpenRef } = {}) {
     selectedTimerType,
     goalComplete,
     pendingNextPhase,
+    completionPopupDismissed,
     durations,
     setDurations,
     setDailyGoal,

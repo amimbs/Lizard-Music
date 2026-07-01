@@ -152,6 +152,7 @@ export default function App() {
     selectedTimerType: pomodoroSelectedTimerType,
     goalComplete: pomodoroGoalComplete,
     pendingNextPhase: pomodoroPendingNextPhase,
+    completionPopupDismissed: pomodoroCompletionPopupDismissed,
     durations: pomodoroDurations,
     setDurations: setPomodoroDurations,
     setDailyGoal: setPomodoroDailyGoal,
@@ -513,6 +514,7 @@ export default function App() {
         formOpen={pomodoroOpen}
         goalComplete={pomodoroGoalComplete}
         pendingNextPhase={pomodoroPendingNextPhase}
+        completionPopupDismissed={pomodoroCompletionPopupDismissed}
         dailyGoal={pomodoroDailyGoal}
         theme={theme}
         onConfirmPending={confirmPomodoroPendingNext}
@@ -529,6 +531,7 @@ export default function App() {
           dailyGoal={pomodoroDailyGoal}
           longRestFrequency={pomodoroLongRestFrequency}
           selectedTimerType={pomodoroSelectedTimerType}
+          pendingNextPhase={pomodoroPendingNextPhase}
           goalComplete={pomodoroGoalComplete}
           theme={theme}
           durations={pomodoroDurations}
