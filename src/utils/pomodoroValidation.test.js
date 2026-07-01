@@ -4,12 +4,16 @@ import {
   validateShortRestMinutes,
   validateLongRestMinutes,
   validateAllDurations,
+  validateDailyGoal,
+  formatCycleBullets,
   POMODORO_MIN,
   POMODORO_MAX,
   SHORT_REST_MIN,
   SHORT_REST_MAX,
   LONG_REST_MIN,
   LONG_REST_MAX,
+  DAILY_GOAL_MIN,
+  DAILY_GOAL_MAX,
 } from './pomodoroValidation.js'
 
 describe('validatePomodoroMinutes', () => {
@@ -58,5 +62,26 @@ describe('validateAllDurations', () => {
     expect(result.errors.pomodoro).toBeDefined()
     expect(result.errors.shortRest).toBeDefined()
     expect(result.errors.longRest).toBeDefined()
+  })
+})
+
+describe('validateDailyGoal', () => {
+  it('allows 1–12 cycles only', () => {
+    expect(validateDailyGoal(DAILY_GOAL_MIN)).toBe(true)
+    expect(validateDailyGoal(DAILY_GOAL_MAX)).toBe(true)
+    expect(validateDailyGoal(4)).toBe(true)
+    expect(validateDailyGoal(DAILY_GOAL_MIN - 1)).toBe(false)
+    expect(validateDailyGoal(DAILY_GOAL_MAX + 1)).toBe(false)
+    expect(validateDailyGoal(4.5)).toBe(false)
+    expect(validateDailyGoal('4')).toBe(false)
+    expect(validateDailyGoal(NaN)).toBe(false)
+  })
+})
+
+describe('formatCycleBullets', () => {
+  it('renders filled and open bullets for progress', () => {
+    expect(formatCycleBullets(0, 4)).toBe('○ ○ ○ ○')
+    expect(formatCycleBullets(2, 4)).toBe('● ● ○ ○')
+    expect(formatCycleBullets(4, 4)).toBe('● ● ● ●')
   })
 })

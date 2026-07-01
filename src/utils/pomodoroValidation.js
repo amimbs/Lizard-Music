@@ -74,3 +74,20 @@ export function validateAllDurations({ pomodoro, shortRest, longRest }) {
 export function durationToSeconds(value) {
   return value * getDurationConfig().unit
 }
+
+export const DAILY_GOAL_MIN = 1
+export const DAILY_GOAL_MAX = 12
+export const DEFAULT_DAILY_GOAL = 4
+
+export function validateDailyGoal(value) {
+  if (typeof value !== 'number') return false
+  return Number.isInteger(value) && value >= DAILY_GOAL_MIN && value <= DAILY_GOAL_MAX
+}
+
+export function formatCycleBullets(completed, goal) {
+  const bullets = []
+  for (let i = 0; i < goal; i++) {
+    bullets.push(i < completed ? '●' : '○')
+  }
+  return bullets.join(' ')
+}

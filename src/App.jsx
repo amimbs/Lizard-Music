@@ -141,10 +141,21 @@ export default function App() {
 
   const {
     phase: pomodoroPhase,
+    isPaused: pomodoroIsPaused,
     remainingSeconds: pomodoroRemainingSeconds,
+    completedCycles: pomodoroCompletedCycles,
+    dailyGoal: pomodoroDailyGoal,
+    selectedTimerType: pomodoroSelectedTimerType,
+    goalComplete: pomodoroGoalComplete,
     durations: pomodoroDurations,
     setDurations: setPomodoroDurations,
+    setDailyGoal: setPomodoroDailyGoal,
+    setSelectedTimerType: setPomodoroSelectedTimerType,
     start: startPomodoro,
+    pause: pausePomodoro,
+    resume: resumePomodoro,
+    reset: resetPomodoro,
+    dismissGoalComplete: dismissPomodoroGoalComplete,
   } = usePomodoroTimer({ onChime: handlePomodoroChime })
 
   const { estimateRowSize } = useRowHeight()
@@ -493,10 +504,22 @@ export default function App() {
       {pomodoroOpen && (
         <PomodoroOverlay
           phase={pomodoroPhase}
+          isPaused={pomodoroIsPaused}
           remainingSeconds={pomodoroRemainingSeconds}
+          completedCycles={pomodoroCompletedCycles}
+          dailyGoal={pomodoroDailyGoal}
+          selectedTimerType={pomodoroSelectedTimerType}
+          goalComplete={pomodoroGoalComplete}
+          theme={theme}
           durations={pomodoroDurations}
           onDurationsChange={setPomodoroDurations}
+          onDailyGoalChange={setPomodoroDailyGoal}
+          onTimerTypeChange={setPomodoroSelectedTimerType}
           onStart={startPomodoro}
+          onPause={pausePomodoro}
+          onResume={resumePomodoro}
+          onReset={resetPomodoro}
+          onDismissGoalComplete={dismissPomodoroGoalComplete}
           onClose={() => setPomodoroOpen(false)}
         />
       )}

@@ -1,8 +1,21 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePomodoroTimer } from './usePomodoroTimer.js'
+import { DEFAULT_DAILY_GOAL } from '../utils/pomodoroValidation.js'
 
 const MIN = 5 * 60 * 1000
+
+function completePomodoroAndShortRest(result) {
+  act(() => {
+    result.current.start()
+  })
+  act(() => {
+    vi.advanceTimersByTime(MIN)
+  })
+  act(() => {
+    vi.advanceTimersByTime(MIN)
+  })
+}
 
 describe('usePomodoroTimer', () => {
   beforeEach(() => {
@@ -185,5 +198,319 @@ describe('usePomodoroTimer', () => {
     })
 
     expect(result.current.phase).toBe('idle')
+  })
+
+  it('increments completed cycles only after pomodoro and short rest', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+    })
+
+    act(() => {
+      result.current.start()
+    })
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.completedCycles).toBe(0)
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.completedCycles).toBe(1)
+  })
+
+  it('does not increment completed cycles after pomodoro alone', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+    })
+
+    act(() => {
+      result.current.start()
+    })
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.completedCycles).toBe(0)
+    expect(result.current.phase).toBe('shortRest')
+  })
+
+  it('does not increment completed cycles after long rest', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.setDailyGoal(12)
+    })
+
+    for (let i = 0; i < 3; i++) {
+      completePomodoroAndShortRest(result)
+    }
+
+    act(() => {
+      result.current.start()
+    })
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+    act(() => {
+      vi.advanceTimersByTime(15 * 60 * 1000)
+    })
+
+    expect(result.current.completedCycles).toBe(3)
+  })
+
+  it('does not increment completed cycles for manual short rest without pomodoro', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.setSelectedTimerType('shortRest')
+    })
+
+    act(() => {
+      result.current.start()
+    })
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.completedCycles).toBe(0)
+  })
+
+  it('sets goalComplete when daily goal is reached', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.setDailyGoal(1)
+    })
+
+    completePomodoroAndShortRest(result)
+
+    expect(result.current.goalComplete).toBe(true)
+    expect(result.current.phase).toBe('idle')
+    expect(result.current.completedCycles).toBe(1)
+  })
+
+  it('resets to defaults after dismissGoalComplete', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.setDailyGoal(1)
+    })
+
+    completePomodoroAndShortRest(result)
+
+    act(() => {
+      result.current.dismissGoalComplete()
+    })
+
+    expect(result.current.goalComplete).toBe(false)
+    expect(result.current.completedCycles).toBe(0)
+    expect(result.current.dailyGoal).toBe(DEFAULT_DAILY_GOAL)
+    expect(result.current.durations).toEqual({ pomodoro: 25, shortRest: 5, longRest: 15 })
+    expect(result.current.selectedTimerType).toBe('pomodoro')
+  })
+
+  it('pause stops the countdown', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+
+    const remainingBeforePause = result.current.remainingSeconds
+
+    act(() => {
+      result.current.pause()
+    })
+
+    expect(result.current.isPaused).toBe(true)
+
+    act(() => {
+      vi.advanceTimersByTime(120_000)
+    })
+
+    expect(result.current.remainingSeconds).toBe(remainingBeforePause)
+  })
+
+  it('resume continues from paused remaining time', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+
+    act(() => {
+      result.current.pause()
+    })
+
+    const remainingAtPause = result.current.remainingSeconds
+
+    act(() => {
+      result.current.resume()
+    })
+
+    expect(result.current.isPaused).toBe(false)
+
+    act(() => {
+      vi.advanceTimersByTime(30_000)
+    })
+
+    expect(result.current.remainingSeconds).toBe(remainingAtPause - 30)
+  })
+
+  it('reset stops timer, returns idle, and preserves completed cycles', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+    })
+
+    completePomodoroAndShortRest(result)
+    expect(result.current.completedCycles).toBe(1)
+
+    act(() => {
+      result.current.start()
+    })
+
+    act(() => {
+      result.current.reset()
+    })
+
+    expect(result.current.phase).toBe('idle')
+    expect(result.current.isPaused).toBe(false)
+    expect(result.current.remainingSeconds).toBe(0)
+    expect(result.current.completedCycles).toBe(1)
+  })
+
+  it('does not allow timer type switching while running', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.start()
+    })
+
+    act(() => {
+      result.current.setSelectedTimerType('shortRest')
+    })
+
+    expect(result.current.selectedTimerType).toBe('pomodoro')
+  })
+
+  it('does not allow timer type switching while paused', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.start()
+    })
+    act(() => {
+      result.current.pause()
+    })
+
+    act(() => {
+      result.current.setSelectedTimerType('longRest')
+    })
+
+    expect(result.current.selectedTimerType).toBe('pomodoro')
+  })
+
+  it('allows timer type switching after reset', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.start()
+    })
+    act(() => {
+      result.current.reset()
+    })
+    act(() => {
+      result.current.setSelectedTimerType('shortRest')
+    })
+
+    expect(result.current.selectedTimerType).toBe('shortRest')
+  })
+
+  it('start respects selected timer type', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.setSelectedTimerType('longRest')
+      result.current.start()
+    })
+
+    expect(result.current.phase).toBe('longRest')
+    expect(result.current.remainingSeconds).toBe(15 * 60)
+  })
+
+  it('preserves completed cycles when daily goal is increased', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+    })
+
+    completePomodoroAndShortRest(result)
+    expect(result.current.completedCycles).toBe(1)
+
+    act(() => {
+      result.current.setDailyGoal(8)
+    })
+
+    expect(result.current.completedCycles).toBe(1)
+    expect(result.current.goalComplete).toBe(false)
+  })
+
+  it('triggers goalComplete when daily goal is lowered below completed cycles', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+    })
+
+    completePomodoroAndShortRest(result)
+    expect(result.current.completedCycles).toBe(1)
+
+    act(() => {
+      result.current.setDailyGoal(1)
+    })
+
+    expect(result.current.goalComplete).toBe(true)
+  })
+
+  it('duration changes apply only to future timers', () => {
+    const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+    })
+
+    completePomodoroAndShortRest(result)
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 10, shortRest: 10, longRest: 20 })
+      result.current.start()
+    })
+
+    expect(result.current.remainingSeconds).toBe(10 * 60)
   })
 })
