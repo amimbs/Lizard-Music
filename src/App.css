@@ -39,6 +39,19 @@
   width: 32px;
   height: 32px;
   flex-shrink: 0;
+  padding: 0;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+.brand-icon:hover {
+  background: var(--bg-elev-2);
+}
+.brand-icon:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .brand-logo {
@@ -683,6 +696,195 @@
   color: var(--text-dim);
 }
 .modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.pomodoro-modal {
+  max-width: 380px;
+}
+.pomodoro-status {
+  text-align: center;
+  margin-bottom: 16px;
+}
+.pomodoro-phase {
+  margin: 0 0 4px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.pomodoro-countdown {
+  margin: 0;
+  font-size: 36px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+}
+.pomodoro-field-error {
+  font-size: 12px;
+  color: var(--danger, #e55);
+}
+.pomodoro-cycle-progress {
+  text-align: center;
+  margin-bottom: 16px;
+  font-size: 18px;
+  letter-spacing: 0.12em;
+  color: var(--text);
+}
+.pomodoro-timer-type {
+  border: none;
+  margin: 0 0 16px;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+  align-items: center;
+}
+.pomodoro-timer-type:disabled {
+  opacity: 0.55;
+}
+.pomodoro-timer-type .modal-field-label {
+  width: 100%;
+  margin-bottom: 0;
+}
+.pomodoro-timer-type-option {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+  cursor: pointer;
+}
+.pomodoro-timer-type-option input {
+  margin: 0;
+}
+.pomodoro-active-actions {
+  margin-top: 8px;
+}
+.pomodoro-congrats {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  padding: 8px 0 4px;
+}
+.pomodoro-congrats-icon {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+}
+.pomodoro-congrats-logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.pomodoro-congrats-title {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pomodoro-congrats-subtitle {
+  margin: 0 0 8px;
+  font-size: 14px;
+  color: var(--text-dim);
+}
+
+.release-notes-modal {
+  max-width: 420px;
+}
+.release-notes-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+  margin-bottom: 16px;
+}
+.release-notes-icon {
+  display: grid;
+  place-items: center;
+  width: 80px;
+  height: 80px;
+  border-radius: 20px;
+  background: var(--accent-soft);
+}
+.release-notes-logo {
+  display: block;
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+}
+.release-notes-title {
+  margin: 4px 0 0;
+  font-size: 18px;
+  font-weight: 700;
+  color: var(--text);
+}
+.release-notes-section {
+  margin-bottom: 16px;
+}
+.release-notes-section-title {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.release-notes-list {
+  margin: 0;
+  padding-left: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 14px;
+  color: var(--text);
+}
+.release-notes-list li {
+  line-height: 1.45;
+}
+
+.pomodoro-pending-next {
+  margin: 0 0 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.pomodoro-completion-popup {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100% - 40px, 280px);
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 32px var(--modal-shadow);
+}
+.pomodoro-completion-popup-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pomodoro-completion-popup-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;

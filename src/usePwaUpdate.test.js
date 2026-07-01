@@ -1,6 +1,6 @@
 import { describe, expect, it, vi, beforeEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
-import { usePwaUpdate } from './usePwaUpdate.js'
+import { usePwaUpdate, UPDATE_PENDING_KEY } from './usePwaUpdate.js'
 
 const registerSW = vi.fn()
 
@@ -52,6 +52,7 @@ describe('usePwaUpdate', () => {
     act(() => result.current.applyUpdate())
 
     expect(result.current.isUpdating).toBe(true)
+    expect(sessionStorage.getItem(UPDATE_PENDING_KEY)).toBe('1')
     expect(applyUpdate).toHaveBeenCalledWith(true)
   })
 

@@ -6,19 +6,26 @@ import { useObjectUrls } from './hooks/useObjectUrls.js'
 import { useMusicLibrary } from './hooks/useMusicLibrary.js'
 import { useTrackViews } from './hooks/useTrackViews.js'
 import { usePlayback } from './hooks/usePlayback.js'
+import { usePomodoroTimer } from './hooks/usePomodoroTimer.js'
 import { useRowHeight } from './hooks/useRowHeight.js'
 import { useMediaSession } from './hooks/useMediaSession.js'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js'
 import { useTheme } from './hooks/useTheme.js'
+import { usePostUpdateReleaseNotes } from './hooks/usePostUpdateReleaseNotes.js'
 import { TopBar } from './components/TopBar.jsx'
 import { LibraryContent } from './components/LibraryContent.jsx'
 import { PlayerFooter } from './components/PlayerFooter.jsx'
 import { AppBanner } from './components/AppBanner.jsx'
 import { UpdateOverlay } from './components/UpdateOverlay.jsx'
+import { ReleaseNotesPopup } from './components/ReleaseNotesPopup.jsx'
+import { PomodoroOverlay } from './components/PomodoroOverlay.jsx'
+import { PomodoroNotificationLayer } from './components/PomodoroNotificationLayer.jsx'
 import { getActiveBanner } from './utils/banners.js'
+import { createChimePlayer } from './utils/chimes.js'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
 import { EditTrackModal } from './components/EditTrackModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
+import { APP_VERSION } from './version.js'
 import {
   getTrackDeleteMode,
   getTrackDeleteConfirmCopy,
@@ -39,6 +46,9 @@ export default function App() {
   const [deleteConfirm, setDeleteConfirm] = useState(null)
   const [deletePlaylistConfirmId, setDeletePlaylistConfirmId] = useState(null)
   const [clearLibraryStep, setClearLibraryStep] = useState(null)
+  const [pomodoroOpen, setPomodoroOpen] = useState(false)
+  const isPomodoroFormOpenRef = useRef(false)
+  isPomodoroFormOpenRef.current = pomodoroOpen
 
   const { theme, setTheme } = useTheme()
 
@@ -117,9 +127,53 @@ export default function App() {
     playbackControls,
   } = usePlayback({ tracks, playOrder })
 
+  const volumeRef = useRef(volume)
+  const mutedRef = useRef(muted)
+  volumeRef.current = volume
+  mutedRef.current = muted
+
+  const chimePlayerRef = useRef(null)
+  if (!chimePlayerRef.current) {
+    chimePlayerRef.current = createChimePlayer({
+      getAudioElement: () => audioRef.current,
+      getVolume: () => volumeRef.current,
+      getMuted: () => mutedRef.current,
+    })
+  }
+
+  const handlePomodoroChime = useCallback((type) => {
+    chimePlayerRef.current?.playChime(type)
+  }, [])
+
+  const {
+    phase: pomodoroPhase,
+    isPaused: pomodoroIsPaused,
+    remainingSeconds: pomodoroRemainingSeconds,
+    completedCycles: pomodoroCompletedCycles,
+    dailyGoal: pomodoroDailyGoal,
+    longRestFrequency: pomodoroLongRestFrequency,
+    selectedTimerType: pomodoroSelectedTimerType,
+    goalComplete: pomodoroGoalComplete,
+    pendingNextPhase: pomodoroPendingNextPhase,
+    completionPopupDismissed: pomodoroCompletionPopupDismissed,
+    durations: pomodoroDurations,
+    setDurations: setPomodoroDurations,
+    setDailyGoal: setPomodoroDailyGoal,
+    setLongRestFrequency: setPomodoroLongRestFrequency,
+    setSelectedTimerType: setPomodoroSelectedTimerType,
+    start: startPomodoro,
+    pause: pausePomodoro,
+    resume: resumePomodoro,
+    reset: resetPomodoro,
+    confirmPendingNext: confirmPomodoroPendingNext,
+    dismissPendingNext: dismissPomodoroPendingNext,
+    dismissGoalComplete: dismissPomodoroGoalComplete,
+  } = usePomodoroTimer({ onChime: handlePomodoroChime, isFormOpenRef: isPomodoroFormOpenRef })
+
   const { estimateRowSize } = useRowHeight()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
   const { showBanner: showUpdateBanner, applyUpdate, dismiss: dismissUpdate, isUpdating } = usePwaUpdate()
+  const { showReleaseNotes, dismissReleaseNotes, releaseNotes } = usePostUpdateReleaseNotes()
 
   const activeBanner = getActiveBanner({
     storageError,
@@ -307,6 +361,7 @@ export default function App() {
         hasLibraryContent={hasLibraryContent}
         theme={theme}
         onThemeChange={setTheme}
+        onOpenPomodoro={() => setPomodoroOpen(true)}
       />
 
       <div className="app-banners">
@@ -458,6 +513,53 @@ export default function App() {
       )}
 
       {isUpdating && <UpdateOverlay />}
+
+      {showReleaseNotes && releaseNotes && (
+        <ReleaseNotesPopup
+          version={APP_VERSION}
+          notes={releaseNotes}
+          theme={theme}
+          onDismiss={dismissReleaseNotes}
+        />
+      )}
+
+      <PomodoroNotificationLayer
+        formOpen={pomodoroOpen}
+        goalComplete={pomodoroGoalComplete}
+        pendingNextPhase={pomodoroPendingNextPhase}
+        completionPopupDismissed={pomodoroCompletionPopupDismissed}
+        dailyGoal={pomodoroDailyGoal}
+        theme={theme}
+        onConfirmPending={confirmPomodoroPendingNext}
+        onDismissPending={dismissPomodoroPendingNext}
+        onDismissGoalComplete={dismissPomodoroGoalComplete}
+      />
+
+      {pomodoroOpen && (
+        <PomodoroOverlay
+          phase={pomodoroPhase}
+          isPaused={pomodoroIsPaused}
+          remainingSeconds={pomodoroRemainingSeconds}
+          completedCycles={pomodoroCompletedCycles}
+          dailyGoal={pomodoroDailyGoal}
+          longRestFrequency={pomodoroLongRestFrequency}
+          selectedTimerType={pomodoroSelectedTimerType}
+          pendingNextPhase={pomodoroPendingNextPhase}
+          goalComplete={pomodoroGoalComplete}
+          theme={theme}
+          durations={pomodoroDurations}
+          onDurationsChange={setPomodoroDurations}
+          onDailyGoalChange={setPomodoroDailyGoal}
+          onLongRestFrequencyChange={setPomodoroLongRestFrequency}
+          onTimerTypeChange={setPomodoroSelectedTimerType}
+          onStart={startPomodoro}
+          onPause={pausePomodoro}
+          onResume={resumePomodoro}
+          onReset={resetPomodoro}
+          onDismissGoalComplete={dismissPomodoroGoalComplete}
+          onClose={() => setPomodoroOpen(false)}
+        />
+      )}
     </div>
   )
 }

@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { registerSW } from 'virtual:pwa-register'
 
 const DISMISS_KEY = 'update-banner-dismissed'
+export const UPDATE_PENDING_KEY = 'lizard-update-pending'
 const UPDATE_CHECK_MS = 60 * 60 * 1000
 
 /**
@@ -48,6 +49,11 @@ export function usePwaUpdate() {
 
   const applyUpdate = useCallback(() => {
     setIsUpdating(true)
+    try {
+      sessionStorage.setItem(UPDATE_PENDING_KEY, '1')
+    } catch {
+      // sessionStorage unavailable
+    }
     updateFnRef.current?.(true)
   }, [])
 
