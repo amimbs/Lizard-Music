@@ -14,6 +14,10 @@ import {
   LONG_REST_MAX,
   DAILY_GOAL_MIN,
   DAILY_GOAL_MAX,
+  validateLongRestFrequency,
+  getNextTimerPrompt,
+  LONG_REST_FREQUENCY_MIN,
+  LONG_REST_FREQUENCY_MAX,
 } from './pomodoroValidation.js'
 
 describe('validatePomodoroMinutes', () => {
@@ -75,6 +79,27 @@ describe('validateDailyGoal', () => {
     expect(validateDailyGoal(4.5)).toBe(false)
     expect(validateDailyGoal('4')).toBe(false)
     expect(validateDailyGoal(NaN)).toBe(false)
+  })
+})
+
+describe('validateLongRestFrequency', () => {
+  it('allows 2–12 cycles only', () => {
+    expect(validateLongRestFrequency(LONG_REST_FREQUENCY_MIN)).toBe(true)
+    expect(validateLongRestFrequency(LONG_REST_FREQUENCY_MAX)).toBe(true)
+    expect(validateLongRestFrequency(4)).toBe(true)
+    expect(validateLongRestFrequency(LONG_REST_FREQUENCY_MIN - 1)).toBe(false)
+    expect(validateLongRestFrequency(LONG_REST_FREQUENCY_MAX + 1)).toBe(false)
+    expect(validateLongRestFrequency(4.5)).toBe(false)
+    expect(validateLongRestFrequency('4')).toBe(false)
+    expect(validateLongRestFrequency(NaN)).toBe(false)
+  })
+})
+
+describe('getNextTimerPrompt', () => {
+  it('returns the correct prompt for each phase', () => {
+    expect(getNextTimerPrompt('pomodoro')).toBe('Start Pomodoro?')
+    expect(getNextTimerPrompt('shortRest')).toBe('Start Short Rest?')
+    expect(getNextTimerPrompt('longRest')).toBe('Start Long Rest?')
   })
 })
 

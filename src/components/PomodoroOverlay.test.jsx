@@ -2,7 +2,7 @@ import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PomodoroOverlay } from './PomodoroOverlay.jsx'
-import { DEFAULT_DURATIONS, DEFAULT_DAILY_GOAL } from '../utils/pomodoroValidation.js'
+import { DEFAULT_DURATIONS, DEFAULT_DAILY_GOAL, DEFAULT_LONG_REST_FREQUENCY } from '../utils/pomodoroValidation.js'
 
 describe('PomodoroOverlay', () => {
   const defaultProps = {
@@ -11,12 +11,14 @@ describe('PomodoroOverlay', () => {
     remainingSeconds: 0,
     durations: DEFAULT_DURATIONS,
     dailyGoal: DEFAULT_DAILY_GOAL,
+    longRestFrequency: DEFAULT_LONG_REST_FREQUENCY,
     completedCycles: 0,
     selectedTimerType: 'pomodoro',
     goalComplete: false,
     theme: 'original',
     onDurationsChange: vi.fn(),
     onDailyGoalChange: vi.fn(),
+    onLongRestFrequencyChange: vi.fn(),
     onTimerTypeChange: vi.fn(),
     onStart: vi.fn(),
     onPause: vi.fn(),
@@ -42,7 +44,34 @@ describe('PomodoroOverlay', () => {
     expect(screen.getByLabelText(/Short rest \(minutes\)/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Long rest \(minutes\)/)).toBeInTheDocument()
     expect(screen.getByLabelText(/Daily goal \(cycles\)/)).toBeInTheDocument()
+    expect(screen.getByLabelText(/Long rest every \(cycles\)/)).toBeInTheDocument()
     expect(screen.getByRole('button', { name: 'Start' })).toBeInTheDocument()
+  })
+
+  it('renders long rest frequency field with supported range', () => {
+    render(<PomodoroOverlay {...defaultProps} />)
+
+    const frequencyInput = screen.getByLabelText(/Long rest every \(cycles\)/)
+    expect(frequencyInput).toHaveAttribute('min', '2')
+    expect(frequencyInput).toHaveAttribute('max', '12')
+    expect(frequencyInput).toHaveValue(DEFAULT_LONG_REST_FREQUENCY)
+  })
+
+  it('disables Start for invalid long rest frequency', async () => {
+    const user = userEvent.setup()
+    render(<PomodoroOverlay {...defaultProps} />)
+
+    const frequencyInput = screen.getByLabelText(/Long rest every \(cycles\)/)
+    await user.clear(frequencyInput)
+    await user.type(frequencyInput, '1')
+
+    expect(screen.getByRole('button', { name: 'Start' })).toBeDisabled()
+  })
+
+  it('disables long rest frequency field while timer is active', () => {
+    render(<PomodoroOverlay {...defaultProps} phase="pomodoro" remainingSeconds={300} />)
+
+    expect(screen.getByLabelText(/Long rest every \(cycles\)/)).toBeDisabled()
   })
 
   it('renders daily goal field with supported range', () => {

@@ -1,7 +1,10 @@
 import { describe, expect, it, vi, beforeEach, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { usePomodoroTimer } from './usePomodoroTimer.js'
-import { DEFAULT_DAILY_GOAL } from '../utils/pomodoroValidation.js'
+import {
+  DEFAULT_DAILY_GOAL,
+  DEFAULT_LONG_REST_FREQUENCY,
+} from '../utils/pomodoroValidation.js'
 
 const MIN = 5 * 60 * 1000
 
@@ -15,6 +18,10 @@ function completePomodoroAndShortRest(result) {
   act(() => {
     vi.advanceTimersByTime(MIN)
   })
+}
+
+function renderTimer(options = {}) {
+  return renderHook(() => usePomodoroTimer(options))
 }
 
 describe('usePomodoroTimer', () => {
@@ -241,7 +248,7 @@ describe('usePomodoroTimer', () => {
     expect(result.current.phase).toBe('shortRest')
   })
 
-  it('does not increment completed cycles after long rest', () => {
+  it('increments completed cycles after assigned long rest', () => {
     const { result } = renderHook(() => usePomodoroTimer({ onChime: vi.fn() }))
 
     act(() => {
@@ -263,7 +270,7 @@ describe('usePomodoroTimer', () => {
       vi.advanceTimersByTime(15 * 60 * 1000)
     })
 
-    expect(result.current.completedCycles).toBe(3)
+    expect(result.current.completedCycles).toBe(4)
   })
 
   it('does not increment completed cycles for manual short rest without pomodoro', () => {
@@ -316,6 +323,7 @@ describe('usePomodoroTimer', () => {
     expect(result.current.goalComplete).toBe(false)
     expect(result.current.completedCycles).toBe(0)
     expect(result.current.dailyGoal).toBe(DEFAULT_DAILY_GOAL)
+    expect(result.current.longRestFrequency).toBe(DEFAULT_LONG_REST_FREQUENCY)
     expect(result.current.durations).toEqual({ pomodoro: 25, shortRest: 5, longRest: 15 })
     expect(result.current.selectedTimerType).toBe('pomodoro')
   })
@@ -512,5 +520,209 @@ describe('usePomodoroTimer', () => {
     })
 
     expect(result.current.remainingSeconds).toBe(10 * 60)
+  })
+
+  it.each([2, 4, 6])(
+    'selects short rest before threshold and long rest at frequency %i',
+    (frequency) => {
+      const { result } = renderTimer({ onChime: vi.fn() })
+
+      act(() => {
+        result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+        result.current.setLongRestFrequency(frequency)
+        result.current.setDailyGoal(12)
+      })
+
+      for (let i = 1; i < frequency; i++) {
+        act(() => {
+          result.current.start()
+        })
+        act(() => {
+          vi.advanceTimersByTime(MIN)
+        })
+        expect(result.current.phase).toBe('shortRest')
+        act(() => {
+          vi.advanceTimersByTime(MIN)
+        })
+        expect(result.current.pomodoroCount).toBe(i)
+      }
+
+      act(() => {
+        result.current.start()
+      })
+      act(() => {
+        vi.advanceTimersByTime(MIN)
+      })
+
+      expect(result.current.phase).toBe('longRest')
+      expect(result.current.pomodoroCount).toBe(frequency)
+    },
+  )
+
+  it('continues timer when form is closed', () => {
+    const isFormOpenRef = { current: false }
+    const { result } = renderTimer({ onChime: vi.fn(), isFormOpenRef })
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(60_000)
+    })
+
+    expect(result.current.phase).toBe('pomodoro')
+    expect(result.current.remainingSeconds).toBeLessThan(5 * 60)
+  })
+
+  it('sets pendingNextPhase when pomodoro completes with form closed', () => {
+    const isFormOpenRef = { current: false }
+    const { result } = renderTimer({ onChime: vi.fn(), isFormOpenRef })
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.phase).toBe('idle')
+    expect(result.current.pendingNextPhase).toBe('shortRest')
+  })
+
+  it('sets pendingNextPhase to longRest at configured frequency with form closed', () => {
+    const isFormOpenRef = { current: false }
+    const { result } = renderTimer({ onChime: vi.fn(), isFormOpenRef })
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.setLongRestFrequency(2)
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    act(() => {
+      result.current.confirmPendingNext()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    act(() => {
+      result.current.dismissPendingNext()
+    })
+
+    act(() => {
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.pendingNextPhase).toBe('longRest')
+  })
+
+  it('sets pendingNextPhase to pomodoro when rest completes with form closed', () => {
+    const isFormOpenRef = { current: false }
+    const { result } = renderTimer({ onChime: vi.fn(), isFormOpenRef })
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    act(() => {
+      result.current.confirmPendingNext()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.pendingNextPhase).toBe('pomodoro')
+    expect(result.current.phase).toBe('idle')
+  })
+
+  it('confirmPendingNext starts the pending timer', () => {
+    const isFormOpenRef = { current: false }
+    const { result } = renderTimer({ onChime: vi.fn(), isFormOpenRef })
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.pendingNextPhase).toBe('shortRest')
+
+    act(() => {
+      result.current.confirmPendingNext()
+    })
+
+    expect(result.current.pendingNextPhase).toBe(null)
+    expect(result.current.phase).toBe('shortRest')
+    expect(result.current.remainingSeconds).toBe(5 * 60)
+  })
+
+  it('dismissPendingNext leaves timer idle', () => {
+    const isFormOpenRef = { current: false }
+    const { result } = renderTimer({ onChime: vi.fn(), isFormOpenRef })
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    act(() => {
+      result.current.dismissPendingNext()
+    })
+
+    expect(result.current.pendingNextPhase).toBe(null)
+    expect(result.current.phase).toBe('idle')
+  })
+
+  it('sets goalComplete instead of pendingNextPhase when daily goal is met with form closed', () => {
+    const isFormOpenRef = { current: false }
+    const { result } = renderTimer({ onChime: vi.fn(), isFormOpenRef })
+
+    act(() => {
+      result.current.setDurations({ pomodoro: 5, shortRest: 5, longRest: 15 })
+      result.current.setDailyGoal(1)
+      result.current.start()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    act(() => {
+      result.current.confirmPendingNext()
+    })
+
+    act(() => {
+      vi.advanceTimersByTime(MIN)
+    })
+
+    expect(result.current.goalComplete).toBe(true)
+    expect(result.current.pendingNextPhase).toBe(null)
   })
 })

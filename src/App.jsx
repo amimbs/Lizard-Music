@@ -17,6 +17,7 @@ import { PlayerFooter } from './components/PlayerFooter.jsx'
 import { AppBanner } from './components/AppBanner.jsx'
 import { UpdateOverlay } from './components/UpdateOverlay.jsx'
 import { PomodoroOverlay } from './components/PomodoroOverlay.jsx'
+import { PomodoroNotificationLayer } from './components/PomodoroNotificationLayer.jsx'
 import { getActiveBanner } from './utils/banners.js'
 import { createChimePlayer } from './utils/chimes.js'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
@@ -43,6 +44,8 @@ export default function App() {
   const [deletePlaylistConfirmId, setDeletePlaylistConfirmId] = useState(null)
   const [clearLibraryStep, setClearLibraryStep] = useState(null)
   const [pomodoroOpen, setPomodoroOpen] = useState(false)
+  const isPomodoroFormOpenRef = useRef(false)
+  isPomodoroFormOpenRef.current = pomodoroOpen
 
   const { theme, setTheme } = useTheme()
 
@@ -145,18 +148,23 @@ export default function App() {
     remainingSeconds: pomodoroRemainingSeconds,
     completedCycles: pomodoroCompletedCycles,
     dailyGoal: pomodoroDailyGoal,
+    longRestFrequency: pomodoroLongRestFrequency,
     selectedTimerType: pomodoroSelectedTimerType,
     goalComplete: pomodoroGoalComplete,
+    pendingNextPhase: pomodoroPendingNextPhase,
     durations: pomodoroDurations,
     setDurations: setPomodoroDurations,
     setDailyGoal: setPomodoroDailyGoal,
+    setLongRestFrequency: setPomodoroLongRestFrequency,
     setSelectedTimerType: setPomodoroSelectedTimerType,
     start: startPomodoro,
     pause: pausePomodoro,
     resume: resumePomodoro,
     reset: resetPomodoro,
+    confirmPendingNext: confirmPomodoroPendingNext,
+    dismissPendingNext: dismissPomodoroPendingNext,
     dismissGoalComplete: dismissPomodoroGoalComplete,
-  } = usePomodoroTimer({ onChime: handlePomodoroChime })
+  } = usePomodoroTimer({ onChime: handlePomodoroChime, isFormOpenRef: isPomodoroFormOpenRef })
 
   const { estimateRowSize } = useRowHeight()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
@@ -501,6 +509,17 @@ export default function App() {
 
       {isUpdating && <UpdateOverlay />}
 
+      <PomodoroNotificationLayer
+        formOpen={pomodoroOpen}
+        goalComplete={pomodoroGoalComplete}
+        pendingNextPhase={pomodoroPendingNextPhase}
+        dailyGoal={pomodoroDailyGoal}
+        theme={theme}
+        onConfirmPending={confirmPomodoroPendingNext}
+        onDismissPending={dismissPomodoroPendingNext}
+        onDismissGoalComplete={dismissPomodoroGoalComplete}
+      />
+
       {pomodoroOpen && (
         <PomodoroOverlay
           phase={pomodoroPhase}
@@ -508,12 +527,14 @@ export default function App() {
           remainingSeconds={pomodoroRemainingSeconds}
           completedCycles={pomodoroCompletedCycles}
           dailyGoal={pomodoroDailyGoal}
+          longRestFrequency={pomodoroLongRestFrequency}
           selectedTimerType={pomodoroSelectedTimerType}
           goalComplete={pomodoroGoalComplete}
           theme={theme}
           durations={pomodoroDurations}
           onDurationsChange={setPomodoroDurations}
           onDailyGoalChange={setPomodoroDailyGoal}
+          onLongRestFrequencyChange={setPomodoroLongRestFrequency}
           onTimerTypeChange={setPomodoroSelectedTimerType}
           onStart={startPomodoro}
           onPause={pausePomodoro}

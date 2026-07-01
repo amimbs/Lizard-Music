@@ -798,6 +798,33 @@
   color: var(--text-dim);
 }
 
+.pomodoro-completion-popup {
+  position: fixed;
+  right: 20px;
+  bottom: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: min(100% - 40px, 280px);
+  padding: 16px;
+  border-radius: 12px;
+  background: var(--bg-elev);
+  border: 1px solid var(--border);
+  box-shadow: 0 12px 32px var(--modal-shadow);
+}
+.pomodoro-completion-popup-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+.pomodoro-completion-popup-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .view-empty {
   display: flex;
   flex-direction: column;

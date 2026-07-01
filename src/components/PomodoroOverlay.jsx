@@ -5,9 +5,13 @@ import {
   DEFAULT_DAILY_GOAL,
   DAILY_GOAL_MIN,
   DAILY_GOAL_MAX,
+  DEFAULT_LONG_REST_FREQUENCY,
+  LONG_REST_FREQUENCY_MIN,
+  LONG_REST_FREQUENCY_MAX,
   getDurationConfig,
   validateAllDurations,
   validateDailyGoal,
+  validateLongRestFrequency,
   formatCycleBullets,
 } from '../utils/pomodoroValidation.js'
 
@@ -30,12 +34,14 @@ export function PomodoroOverlay({
   remainingSeconds,
   durations,
   dailyGoal,
+  longRestFrequency,
   completedCycles,
   selectedTimerType,
   goalComplete,
   theme,
   onDurationsChange,
   onDailyGoalChange,
+  onLongRestFrequencyChange,
   onTimerTypeChange,
   onStart,
   onPause,
@@ -46,6 +52,9 @@ export function PomodoroOverlay({
 }) {
   const [localDurations, setLocalDurations] = useState(durations ?? DEFAULT_DURATIONS)
   const [localDailyGoal, setLocalDailyGoal] = useState(dailyGoal ?? DEFAULT_DAILY_GOAL)
+  const [localLongRestFrequency, setLocalLongRestFrequency] = useState(
+    longRestFrequency ?? DEFAULT_LONG_REST_FREQUENCY,
+  )
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
@@ -53,8 +62,9 @@ export function PomodoroOverlay({
     if (phase === 'idle') {
       setLocalDurations(durations)
       setLocalDailyGoal(dailyGoal)
+      setLocalLongRestFrequency(longRestFrequency)
     }
-  }, [durations, dailyGoal, phase])
+  }, [durations, dailyGoal, longRestFrequency, phase])
 
   useEffect(() => {
     const handleKeyDown = (e) => {
@@ -72,7 +82,8 @@ export function PomodoroOverlay({
   const canSwitchTimerType = isIdle && !goalComplete
   const validation = validateAllDurations(localDurations)
   const dailyGoalValid = validateDailyGoal(localDailyGoal)
-  const formValid = validation.valid && dailyGoalValid
+  const longRestFrequencyValid = validateLongRestFrequency(localLongRestFrequency)
+  const formValid = validation.valid && dailyGoalValid && longRestFrequencyValid
   const { limits, label: durationLabel } = getDurationConfig()
 
   const logoSrc =
@@ -94,6 +105,14 @@ export function PomodoroOverlay({
     setLocalDailyGoal(parsed)
     if (canEditSettings && validateDailyGoal(parsed)) {
       onDailyGoalChange(parsed)
+    }
+  }
+
+  const handleLongRestFrequencyChange = (value) => {
+    const parsed = value === '' ? '' : Number(value)
+    setLocalLongRestFrequency(parsed)
+    if (canEditSettings && validateLongRestFrequency(parsed)) {
+      onLongRestFrequencyChange(parsed)
     }
   }
 
@@ -183,6 +202,29 @@ export function PomodoroOverlay({
                 {!dailyGoalValid && (
                   <span id="daily-goal-error" className="pomodoro-field-error">
                     Daily goal must be {DAILY_GOAL_MIN}–{DAILY_GOAL_MAX} cycles
+                  </span>
+                )}
+              </label>
+
+              <label className="modal-field">
+                <span className="modal-field-label">Long rest every (cycles)</span>
+                <input
+                  type="number"
+                  min={LONG_REST_FREQUENCY_MIN}
+                  max={LONG_REST_FREQUENCY_MAX}
+                  step={1}
+                  value={localLongRestFrequency}
+                  onChange={(e) => handleLongRestFrequencyChange(e.target.value)}
+                  disabled={!canEditSettings}
+                  aria-invalid={!longRestFrequencyValid}
+                  aria-describedby={
+                    !longRestFrequencyValid ? 'long-rest-frequency-error' : undefined
+                  }
+                />
+                {!longRestFrequencyValid && (
+                  <span id="long-rest-frequency-error" className="pomodoro-field-error">
+                    Long rest frequency must be {LONG_REST_FREQUENCY_MIN}–{LONG_REST_FREQUENCY_MAX}{' '}
+                    cycles
                   </span>
                 )}
               </label>
