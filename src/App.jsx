@@ -11,11 +11,13 @@ import { useRowHeight } from './hooks/useRowHeight.js'
 import { useMediaSession } from './hooks/useMediaSession.js'
 import { useKeyboardShortcuts } from './hooks/useKeyboardShortcuts.js'
 import { useTheme } from './hooks/useTheme.js'
+import { usePostUpdateReleaseNotes } from './hooks/usePostUpdateReleaseNotes.js'
 import { TopBar } from './components/TopBar.jsx'
 import { LibraryContent } from './components/LibraryContent.jsx'
 import { PlayerFooter } from './components/PlayerFooter.jsx'
 import { AppBanner } from './components/AppBanner.jsx'
 import { UpdateOverlay } from './components/UpdateOverlay.jsx'
+import { ReleaseNotesPopup } from './components/ReleaseNotesPopup.jsx'
 import { PomodoroOverlay } from './components/PomodoroOverlay.jsx'
 import { PomodoroNotificationLayer } from './components/PomodoroNotificationLayer.jsx'
 import { getActiveBanner } from './utils/banners.js'
@@ -23,6 +25,7 @@ import { createChimePlayer } from './utils/chimes.js'
 import { AddToPlaylistModal } from './components/AddToPlaylistModal.jsx'
 import { EditTrackModal } from './components/EditTrackModal.jsx'
 import { ConfirmModal } from './components/ConfirmModal.jsx'
+import { APP_VERSION } from './version.js'
 import {
   getTrackDeleteMode,
   getTrackDeleteConfirmCopy,
@@ -170,6 +173,7 @@ export default function App() {
   const { estimateRowSize } = useRowHeight()
   const { showBanner, showManualHint, install, dismiss } = useInstallPrompt()
   const { showBanner: showUpdateBanner, applyUpdate, dismiss: dismissUpdate, isUpdating } = usePwaUpdate()
+  const { showReleaseNotes, dismissReleaseNotes, releaseNotes } = usePostUpdateReleaseNotes()
 
   const activeBanner = getActiveBanner({
     storageError,
@@ -509,6 +513,15 @@ export default function App() {
       )}
 
       {isUpdating && <UpdateOverlay />}
+
+      {showReleaseNotes && releaseNotes && (
+        <ReleaseNotesPopup
+          version={APP_VERSION}
+          notes={releaseNotes}
+          theme={theme}
+          onDismiss={dismissReleaseNotes}
+        />
+      )}
 
       <PomodoroNotificationLayer
         formOpen={pomodoroOpen}
