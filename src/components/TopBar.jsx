@@ -32,6 +32,7 @@ export function TopBar({
   hasLibraryContent,
   theme,
   onThemeChange,
+  onOpenPomodoro,
 }) {
   const handleViewChange = (nextView) => {
     switchView({
@@ -57,7 +58,12 @@ export function TopBar({
   return (
     <header className="topbar">
       <div className="brand">
-        <span className="brand-icon">
+        <button
+          type="button"
+          className="brand-icon"
+          onClick={onOpenPomodoro}
+          aria-label="Pomodoro timer"
+        >
           <img
             className="brand-logo"
             src={logoSrc}
@@ -65,7 +71,7 @@ export function TopBar({
             width={32}
             height={32}
           />
-        </span>
+        </button>
         <span className="brand-name">Lizard Music</span>
       </div>
       <nav className="nav" aria-label="Library">
